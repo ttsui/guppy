@@ -1,0 +1,31 @@
+d                    0 Thu Jan  1 09:59:59 1970 ..
+f           1664169984 Fri Jun 17 19:28:00 2005 SBS DIGITAL 1-1.rec
+f           2216583168 Tue May 24 19:30:00 2005 INSIGHT-#-2.rec
+f           3144491008 Thu Jun 16 20:30:00 2005 MONARCHY-#.rec
+f           3104352256 Thu Jun 16 20:32:00 2005 LOST-#.rec
+f           3444328448 Thu Jun 23 12:02:00 2005 The Nanny-1.rec
+f           2183374848 Tue May 17 19:30:00 2005 INSIGHT-#-1.rec
+f           1677260800 Fri Jun 24 19:28:00 2005 SBS DIGITAL 1-2.rec
+f           2250561536 Sat Jun 18 20:30:00 2005 IRONCHEF-#.rec
+f           2555981824 Sun Jun  5 19:30:00 2005 REAL DAVINCI CODE-#.rec
+f            199153664 Sun May 29 19:30:00 2005 THE REAL DA VINCI CODE-#.rec
+f           2603821056 Tue Jun 14 21:34:00 2005 BOSTON LEGAL-1.rec
+f           1258354688 Mon Jun  6 21:00:00 2005 JOHN SAFRAN V GOD-#-3.rec
+f           2285694976 Tue Jun  7 19:30:00 2005 INSIGHT-#-3.rec
+f           2240069632 Tue Jun 21 19:30:00 2005 INSIGHT-#.rec
+f           3144587264 Sat Jun 25 19:28:00 2005 DOCTOR WHO-#.rec
+f           1620180992 Wed Jun 15 19:28:00 2005 FOODLOVERS-#.rec
+f           3202437120 Thu Jun 23 20:30:00 2005 ABC News Up-Date-1.rec
+f           1113008128 Mon Jun 20 20:30:00 2005 FAT PIZZA-#.rec
+f           3605075968 Wed Jun  1 22:28:00 2005 REVELATIONS-#.rec
+f           3144972288 Thu Jun  2 20:30:00 2005 MONACRHY.rec
+f           1593903104 Tue Jun 21 19:30:00 2005 BORDER SECURITY-#-2.rec
+f           2339502080 Sat Jun 25 20:30:00 2005 IRONCHEF-#-1.rec
+d                    0 Wed Jan  1 00:00:00 2003 MOVIES
+f           3604690944 Tue Jun 21 21:28:00 2005 BOSTON LEGAL-#-1.rec
+f           2329491456 Sun May 29 19:34:00 2005 The Real Da Vinci Code-1.rec
+f           3604883456 Tue Jun 21 23:28:00 2005 TRU CALIN-#.rec
+f           1541058560 Wed Jun 22 19:28:00 2005 FOODLOVERS-#-1.rec
+f           1227841536 Mon May 30 21:00:00 2005 JOHN SAFRAN V GOD-#-2.rec
+f           1194825728 Mon Jun 13 21:00:00 2005 JOHN SAFRAN V GOD-#-4.rec
+f           2097225728 Tue Jun 14 19:30:00 2005 INSIGHT-#-4.rec

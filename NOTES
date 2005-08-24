@@ -1,0 +1,19 @@
+Features
+
+- Exit when download/upload complete. Useful to chain it with poweroff to turn off laptop
+- Warn before starting transfer about insufficent disk space on either PC or PVR
+- Burn video file onto DVD
+- Create DVD from video file
+
+Design
+- Python
+- PyGtk
+- Base UI off Altair
+- Design file list view like GtkFileChooser.
+- Have a path bar like GtkFileChooser or a Text Entry widget?
+
+Investigate
+- Is there a file list widget? GtkFileSystem object
+- How do we update a Gtk progress bar based off the data we receive from puppy?
+- Does 'delete' command delete dirs?
+- Test 'size', 'reboot' and 'cancel' commands. Do we need to expose them in guppy?

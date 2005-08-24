@@ -1,0 +1,25 @@
+<ui>
+	<menubar name="MenuBar">
+		<menu action="File">
+			<menuitem action="Quit"/>
+		</menu>
+		<menu action="View">
+			<menuitem action="ShowHidden"/>
+		</menu>
+		<menu action="Transfer">
+			<menuitem action="Turbo"/>
+			<menuitem action="Upload"/>
+			<menuitem action="Download"/>
+		</menu>
+		<menu action="Help">
+			<menuitem action="About"/>
+		</menu>
+	</menubar>
+	<toolbar name="Toolbar">
+		<toolitem action="Download"/>
+		<separator/>
+		<toolitem action="Turbo"/>
+		<separator/>
+		<toolitem action="Upload"/>
+	</toolbar>
+</ui>

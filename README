@@ -1,0 +1,36 @@
+Guppy
+
+Introduction
+============
+Guppy is an application to download videos from the Topfield TF5000PVRt. Guppy
+was written because there was no graphical application available on Linux for
+downloading and uploading files to the Topfield PVR.  The command line tool
+puppy is used to communicate with the PVR. Puppy can be obtained from
+http://puppy.sourceforge.net
+
+
+System Requirements
+===================
+Guppy depends on the following software. Please ensure they have been
+correctly installed on your system.
+
+Puppy      - http://puppy.sourceforge.net
+Python 2.4 - http://python.org
+PyGtk  2.6 - http://pygtk.org
+
+
+Running Guppy
+=============
+1. Make sure puppy is in your PATH. Do the following to check.
+	$ which puppy
+
+2. Go into the guppy directory and run Guppy.
+	$ cd guppy-0.0.1
+	$ ./guppy.py
+
+Contact
+=======
+
+Homepage: http://home.exetel.com.au/ttsui/guppy/
+
+Report any bugs or contributions to tsui.tony@gmail.com.

@@ -1,0 +1,12 @@
+Usage: puppy [-pPtv] [-d <device>] -c <command> [args]
+ -p             - packet header output to stderr
+ -P             - full packet dump output to stderr
+ -t             - turbo mode on for file xfers
+ -v             - verbose output to stderr
+ -q             - quiet transfers - no progress updates
+ -d <device>    - USB device (must be usbfs)
+                  for example /proc/bus/usb/001/003
+ -c <command>   - one of size, dir, get, put, rename, delete, mkdir, reboot, cancel
+ args           - optional arguments, as required by each command
+
+Version: 1.10, Compiled: May  5 2005
