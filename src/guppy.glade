@@ -1,3 +1,4 @@
+<?xml version="1.0" standalone="no"?> <!--*- mode: xml -*-->
 <!--
     Guppy Glade User Interface file.
     Copyright (C) 2005 Tony Tsui <tsui.tony@gmail.com>
@@ -16,7 +17,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 -->
-<?xml version="1.0" standalone="no"?> <!--*- mode: xml -*-->
 <!DOCTYPE glade-interface SYSTEM "http://glade.gnome.org/glade-2.0.dtd">
 
 <glade-interface>
