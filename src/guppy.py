@@ -23,6 +23,8 @@ import stat
 import time
 import string
 import math
+import threading
+import Queue
 
 import gtk
 import gtk.glade
@@ -86,6 +88,13 @@ class FileSystemModel(gtk.ListStore):
 		                             gobject.TYPE_STRING, gobject.TYPE_STRING,
 		                             gobject.TYPE_STRING)
 
+	def find(self, name):
+		for row in self:
+			if name == row[FileSystemModel.NAME_COL]:
+				return row
+				
+		return None
+			
 	def getCWD(self):
 		return self.current_dir
 	
@@ -315,8 +324,6 @@ class GuppyWindow:
 		
 		self.show_hidden = False
 
-		self.transfer_dialog = self.glade_xml.get_widget('transfer_dialog')
-		
 		self.pvr_total_size_label = self.glade_xml.get_widget('pvr_total_size_label')
 		self.pvr_free_space_label = self.glade_xml.get_widget('pvr_free_space_label')
 
@@ -328,6 +335,12 @@ class GuppyWindow:
 		
 		self.free_space_timeout_id = gobject.timeout_add(5000, self.update_free_space)
 		self.update_free_space()
+		
+		self.transfer_queue = Queue.Queue(0)
+		self.transfer_thread = TransferThread(self)
+		self.transfer_thread.setDaemon(True)
+		self.transfer_thread.start()
+		
 		
 	def initUIManager(self):
 		self.uimanager = gtk.UIManager()
@@ -456,7 +469,9 @@ class GuppyWindow:
 	
 	def run(self):
 		self.createFileTrees()
+		gtk.gdk.threads_enter()
 		gtk.main()
+		gtk.gdk.threads_leave()
 
 
 	def on_about(self, widget, data=None):	
@@ -497,13 +512,6 @@ class GuppyWindow:
 		self.show_hidden = not self.show_hidden
 		self.pc_liststore.get_model().refilter()
 		self.pvr_liststore.get_model().refilter()
-
-	def on_transfer_dialog_cancel_btn_clicked(self, widget, data=None):
-		self.transferDialogClose()
-		
-	def on_transfer_dialog_delete_event(self, widget, data=None):
-		self.transferDialogClose()
-		return True
 
 	def on_treeview_changed(self, widget, fs_model):
 		model, files = widget.get_selected_rows()
@@ -559,18 +567,18 @@ class GuppyWindow:
 	def on_upload_btn_clicked(self, widget, data=None):
 		self.transferFile('upload')
 
-	def transferDialogClose(self):
-		self.puppy.cancelTransfer()
-		self.transfer_dialog.hide()
-
-		# Update FileSystemModel view				
-		models = [ (self.pc_model, self.pc_treeview), (self.pvr_model, self.pvr_treeview) ]
-		for model, treeview in models:
-			handler_id = treeview.get_data('changed_handler_id')
-			selection = treeview.get_selection()
-			selection.handler_block(handler_id)
-			model.changeDir()
-			selection.handler_unblock(handler_id)
+#	def transferDialogClose(self):
+#		self.puppy.cancelTransfer()
+#		self.transfer_dialog.hide()
+#
+#		# Update FileSystemModel view				
+#		models = [ (self.pc_model, self.pc_treeview), (self.pvr_model, self.pvr_treeview) ]
+#		for model, treeview in models:
+#			handler_id = treeview.get_data('changed_handler_id')
+#			selection = treeview.get_selection()
+#			selection.handler_block(handler_id)
+#			model.changeDir()
+#			selection.handler_unblock(handler_id)
 	
 	def transferFile(self, direction):
 		if direction == 'download':
@@ -607,20 +615,8 @@ class GuppyWindow:
 		
 		# Stop free space update timer
 		gobject.source_remove(self.free_space_timeout_id)
-		
-		progress_bar = self.glade_xml.get_widget('transfer_dialog_progressbar')
-		file_label = self.glade_xml.get_widget('transfer_dialog_file_label')
-		file_no_label = self.glade_xml.get_widget('transfer_dialog_file_no_label')
-		from_label = self.glade_xml.get_widget('transfer_dialog_from_label')
-		to_label = self.glade_xml.get_widget('transfer_dialog_to_label')
 
-		dir_label = self.glade_xml.get_widget('transfer_dialog_direction_label1')
-		dir_label.set_markup('<b>' + direction_text + ' ' + _('File') + ':</b>')
-
-		dir_label = self.glade_xml.get_widget('transfer_dialog_direction_label2')
-		dir_label.set_markup('<b>' + direction_text + ':</b>')
-
-		self.transfer_dialog.show()
+		queue_box = self.glade_xml.get_widget('queue_vbox')
 
 		file_count = len(files)
 		file_no = 1
@@ -633,14 +629,15 @@ class GuppyWindow:
 				dst_dir = self.pc_model.getCWD()
 				src_file = src_dir + '\\' + file
 				dst_file = dst_dir + '/' + file
+				existing_file = os.access(dst_file, os.F_OK)
 			else:
 				src_dir = self.pc_model.getCWD()
 				dst_dir = self.pvr_model.getCWD()
 				src_file = src_dir + '/' + file
 				dst_file = dst_dir + '\\' + file
+				existing_file = self.pvr_model.find(file)
 
-			if os.access(dst_file, os.F_OK):
-				self.transfer_dialog.hide()
+			if existing_file:
 				msg = _('The file') + ' "' + dst_file + '" ' + _('already exists. Would you like to replace it?')
 				msg2 = _('If you replace an existing file, its contents will be overwritten.')
 				dialog = gtk.MessageDialog(type=gtk.MESSAGE_QUESTION,
@@ -649,33 +646,28 @@ class GuppyWindow:
 				response = dialog.run()
 				dialog.destroy()
 
-				self.transfer_dialog.show()
-
 				if response == gtk.RESPONSE_NO or response == gtk.RESPONSE_DELETE_EVENT:
 					file_no += 1
 					continue
-	
-			if direction == 'download':
-				self.puppy.getFile(src_file, dst_file)
-			else:
-				self.puppy.putFile(src_file, dst_file)
 
+			xml = gtk.glade.XML('guppy.glade', 'progress_box')
+			progress_box = xml.get_widget('progress_box')
+			
+			progress_bar = xml.get_widget('transfer_progressbar')
+			file_label = xml.get_widget('transfer_file_label')
+			from_label = xml.get_widget('transfer_from_label')
+			to_label = xml.get_widget('transfer_to_label')
+	
+			dir_label = xml.get_widget('transfer_direction_label')
+			dir_label.set_markup('<b>' + direction_text + ':</b>')
+	
 			file_label.set_text(file)
 			from_label.set_text(src_dir)
 			to_label.set_text(dst_dir)
-			file_no_label.set_markup('<b>' + str(file_no) + ' ' + _('of') + ' ' + str(file_count) + '</b>')
 
-			file_no += 1
-
-			percent, speed, time = self.puppy.getProgress()
-			while percent != None:
-				progress_bar.set_fraction(float(percent)/100)
-				progress_bar.set_text('(' + time['remaining'] + ' ' + _('Remaining') + ')')
-				while gtk.events_pending():
-					gtk.main_iteration()
-				percent, speed, time = self.puppy.getProgress()
-		
-		self.transferDialogClose()
+			queue_box.pack_start(progress_box)
+	
+			self.transfer_queue.put((direction, src_file, dst_file, progress_bar), True, None)
 
 		# Restart free space update timer
 		self.free_space_timeout_id = gobject.timeout_add(5000, self.update_free_space)
@@ -686,11 +678,43 @@ class GuppyWindow:
 		self.pc_free_space_label.set_text(_('Free Space') + ': ' + self.pc_model.freeSpace())
 		return True
 		
+class TransferThread(threading.Thread):
+	def __init__(self, guppy):
+		threading.Thread.__init__(self)
+		self.guppy = guppy
+		self.file_queue = self.guppy.transfer_queue
+
+	def run(self):
+		while True:
+			direction, src_file, dst_file, progress_bar = self.file_queue.get(True, None)
+			print direction, src_file, dst_file, progress_bar
+			
+			if direction == 'download':
+				self.guppy.puppy.getFile(src_file, dst_file)
+			else:
+				self.guppy.puppy.putFile(src_file, dst_file)
+
+			percent, speed, time = self.guppy.puppy.getProgress()
+			while percent != None:
+				gtk.gdk.threads_enter()
+				progress_bar.set_fraction(float(percent)/100)
+				gtk.gdk.threads_leave()
+				gtk.gdk.threads_enter()
+				progress_bar.set_text('(' + time['remaining'] + ' ' + _('Remaining') + ')')
+				gtk.gdk.threads_leave()
+				gtk.gdk.threads_enter()
+				while gtk.events_pending():
+					gtk.main_iteration()
+				gtk.gdk.threads_leave()
+				percent, speed, time = self.guppy.puppy.getProgress()
+			
+
 if __name__ == "__main__":
 	locale.setlocale(locale.LC_ALL, '')
 	gettext.bindtextdomain(APP_NAME, 'i18n')
 	gettext.textdomain(APP_NAME)
 	gettext.install(APP_NAME, 'i18n', unicode=1)
 	
+	gtk.gdk.threads_init()
 	guppy = GuppyWindow()
 	guppy.run()
