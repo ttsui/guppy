@@ -665,7 +665,7 @@ class GuppyWindow:
 			from_label.set_text(src_dir)
 			to_label.set_text(dst_dir)
 
-			queue_box.pack_start(progress_box)
+			queue_box.pack_start(progress_box, expand=False)
 	
 			self.transfer_queue.put((direction, src_file, dst_file, progress_bar), True, None)
 
