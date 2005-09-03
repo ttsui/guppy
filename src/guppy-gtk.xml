@@ -22,6 +22,7 @@
 			<menuitem action="Quit"/>
 		</menu>
 		<menu action="View">
+			<menuitem action="ShowFileTransfer"/>
 			<menuitem action="ShowHidden"/>
 		</menu>
 		<menu action="Transfer">
