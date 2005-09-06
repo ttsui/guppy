@@ -23,6 +23,9 @@ import signal
 DEBUG = False
 
 class Puppy:
+	# puppy error code for lock failure
+	E_GLOBAL_LOCK = 8;
+	
 	def __init__(self):
 		self.cmd = 'puppy'
 		self.turbo = False
@@ -33,7 +36,7 @@ class Puppy:
 		
 		return
 
-	def getDiskSpace(self):		
+	def getDiskSpace(self):
 		args = '-c size'
 
 		output_file = self._execute(args)
@@ -74,7 +77,7 @@ class Puppy:
 
 		output = output_file.readlines()
 		output_file.close()
-		
+
 		listing = []
 		# Parse output of output_file and return it as a list
 		for line in output:
@@ -99,7 +102,11 @@ class Puppy:
 			args += ' "' + os.path.basename(src_file) + '"'
 			
 		self.progress_output = self._execute(args)
-		
+
+		status = self.getStatus(wait=False)
+		if status != 0 and status != -1:
+			raise PuppyError("getFile failed. puppy returned: " + str(self.progress_output))
+
 		return
 
 	def putFile(self, src_file, dest_file=None):
@@ -111,6 +118,10 @@ class Puppy:
 			
 		self.progress_output = self._execute(args)
 		
+		status = self.getStatus(wait=False)
+		if status != 0 and status != -1:
+			raise PuppyError("putFile failed. puppy returned: " + str(self.progress_output))
+			
 		return
 
 	def makeDir(self, dirname):
@@ -161,6 +172,8 @@ class Puppy:
 	def getProgress(self):
 		exit_status = self.getStatus(wait=False)
 		if exit_status != -1:
+			# Raise exception if puppy did not exit successfully or because of
+			# SIGTERM.
 			if exit_status != 0 and exit_status != 15:
 				raise PuppyError("Transfer failed")
 			
@@ -200,7 +213,20 @@ class Puppy:
 		
 	def setTurbo(self, value):
 		self.turbo = value
+	
+	def reset(self):	
+		args = '-c cancel'
+			
+		output_file = self._execute(args)
+
+		output = output_file.readlines()
+		output_file.close()
 		
+		if self.getStatus() != 0:
+			return False
+		
+		return True
+
 	def _execute(self, args):
 		cmd = self.cmd
 		if self.turbo == True:
@@ -213,6 +239,9 @@ class Puppy:
 		self.popen_obj = popen2.Popen4(cmd)
 		self.popen_obj.tochild.close()
 		
+		if self.getStatus(wait=False) == Puppy.E_GLOBAL_LOCK:
+			raise PuppyError(self.popen_obj.fromchild.readlines())
+			
 		return self.popen_obj.fromchild
 
 class PuppyError(Exception):

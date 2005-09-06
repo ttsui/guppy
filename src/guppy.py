@@ -201,7 +201,9 @@ class PVRFileSystemModel(FileSystemModel):
 
 		# FIXME: Get dir from when Guppy last exited
 		self.current_dir = ''
-		
+
+		self.freespace = 0
+				
 		self.puppy = puppy.Puppy()
 		
 		self.changeDir()
@@ -236,8 +238,13 @@ class PVRFileSystemModel(FileSystemModel):
 			self.append(file)
 	
 	def freeSpace(self):
-		total, free = self.puppy.getDiskSpace()
-		return humanReadableSize(free)
+		try:
+			total, free = self.puppy.getDiskSpace()
+			self.freespace = free
+		except:
+			pass
+
+		return humanReadableSize(self.freespace)
 
 class PCFileSystemModel(FileSystemModel):
 	def __init__(self):
@@ -577,14 +584,13 @@ class GuppyWindow:
 	def on_upload_btn_clicked(self, widget, data=None):
 		self.transferFile('upload')
 
-	def on_transfer_remove_btn_clicked(self, widget, transfer_obj):
-		transfer_obj.setAlive(False)
+	def on_transfer_remove_btn_clicked(self, widget, file_transfer):
+		file_transfer.cancel()
 		
-		progress_box = transfer_obj.xml.get_widget('progress_box')
+		progress_box = file_transfer.xml.get_widget('progress_box')
 		progress_box.destroy()
 
 	def on_transfer_stop_btn_clicked(self, widget, data=None):
-		print 'on_transfer_stop_btn_clicked()'
 		self.puppy.cancelTransfer()
 
 		# Update FileSystemModel view				
@@ -642,7 +648,7 @@ class GuppyWindow:
 				return
 		
 		# Stop free space update timer
-		gobject.source_remove(self.free_space_timeout_id)
+#		gobject.source_remove(self.free_space_timeout_id)
 
 		queue_box = self.glade_xml.get_widget('queue_vbox')
 	
@@ -700,54 +706,47 @@ class GuppyWindow:
 
 			queue_box.pack_start(progress_box, expand=False)
 	
-			transfer_obj = TransferObject(direction, src_file, dst_file, xml)
+			file_transfer = FileTransfer(direction, src_file, dst_file, xml)
 
 			# Connect transfer instance remove button signal handler
 			remove_btn = xml.get_widget('transfer_remove_button')
-			remove_btn.connect('clicked', self.on_transfer_remove_btn_clicked, transfer_obj)
+			remove_btn.connect('clicked', self.on_transfer_remove_btn_clicked, file_transfer)
 
-			self.transfer_queue.put(transfer_obj, True, None)
+			self.transfer_queue.put(file_transfer, True, None)
 
-		# Restart free space update timer
-		self.free_space_timeout_id = gobject.timeout_add(5000, self.update_free_space)
-		self.update_free_space()
-		
 	def update_free_space(self):		
-#		self.pvr_free_space_label.set_text(_('Free Space') + ': ' + self.pvr_model.freeSpace())
-#		self.pc_free_space_label.set_text(_('Free Space') + ': ' + self.pc_model.freeSpace())
+		self.pvr_free_space_label.set_text(_('Free Space') + ': ' + self.pvr_model.freeSpace())
+		self.pc_free_space_label.set_text(_('Free Space') + ': ' + self.pc_model.freeSpace())
 		return True
 		
-class TransferObject:
+class FileTransfer:
 	def __init__(self, direction, src, dst, xml):
 		self.direction = direction
 		self.src = src
 		self.dst = dst
 		self.xml = xml
 		
-		self.alive = True
+		self.cancelled = False
 	
-	def isAlive(self):
-		return self.alive
+	def isCancelled(self):
+		return self.cancelled
 		
-	def setAlive(self, status):
-		self.alive = status
+	def cancel(self):
+		self.cancelled = True
 		
 class TransferThread(threading.Thread):
+	NUM_OF_RESET_ATTEMPTS = 6
+	NUM_OF_TRANSFER_ATTEMPTS = 2
+	
 	def __init__(self, guppy):
 		threading.Thread.__init__(self)
 		self.guppy = guppy
 		self.file_queue = self.guppy.transfer_queue
 
-	def on_stop_btn_clicked(self, widget, data=None):
-		print 'on_stop_btn_clicked()'
-		
 	def run(self):
-		stop_btn = gtk.Button(stock=gtk.STOCK_STOP)
-		stop_btn.connect('clicked', self.on_stop_btn_clicked)
-		
 		while True:
 			transfer_obj = self.file_queue.get(True, None)
-			if not transfer_obj.isAlive():
+			if transfer_obj.isCancelled():
 				continue
 				
 			direction = transfer_obj.direction
@@ -755,7 +754,6 @@ class TransferThread(threading.Thread):
 			dst_file = transfer_obj.dst
 			xml = transfer_obj.xml
 			
-
 			# Make all widgets in progress box active
 			for widget in ['progress_hbox1', 'progress_hbox2']:
 				widget = xml.get_widget(widget)
@@ -788,26 +786,60 @@ class TransferThread(threading.Thread):
 			else:
 				self.guppy.puppy.putFile(src_file, dst_file)
 
-			percent, speed, time = self.guppy.puppy.getProgress()
+			transfer_successful = True
+			transfer_attempt = 1
+			percent = True			
 			while percent != None:
+				try:
+					percent, speed, time = self.guppy.puppy.getProgress()
+				except puppy.PuppyError:
+					# Quit trying to transfer file after a certain number of attempts
+					if transfer_attempt > TransferThread.NUM_OF_TRANSFER_ATTEMPTS:
+						transfer_successful = False
+						break
+					
+					transfer_attempt += 1
+
+					# Try to reset PVR before attempt transfer again
+					reset_successful = False
+					attempts = 0
+					while not reset_successful and attempts < TransferThread.NUM_OF_RESET_ATTEMPTS:
+						reset_successful = self.guppy.puppy.reset()
+						attempts += 1
+
+					if direction == 'download':
+						self.guppy.puppy.getFile(src_file, dst_file)
+					else:
+						self.guppy.puppy.putFile(src_file, dst_file)
+
+					continue
+
 				gtk.gdk.threads_enter()
 				progress_bar.set_fraction(float(percent)/100)
 				gtk.gdk.threads_leave()
+				
 				gtk.gdk.threads_enter()
 				progress_bar.set_text('(' + time['remaining'] + ' ' + _('Remaining') + ')')
 				gtk.gdk.threads_leave()
+				
 				gtk.gdk.threads_enter()
 				while gtk.events_pending():
 					gtk.main_iteration()
 				gtk.gdk.threads_leave()
-				percent, speed, time = self.guppy.puppy.getProgress()
 			
-			gtk.gdk.threads_enter()
-			progress_bar.set_fraction(1)
-			gtk.gdk.threads_leave()
-			gtk.gdk.threads_enter()
-			progress_bar.set_text(_('Finished'))
-			gtk.gdk.threads_leave()
+			if transfer_successful:
+				gtk.gdk.threads_enter()
+				progress_bar.set_fraction(1)
+				gtk.gdk.threads_leave()
+				
+				gtk.gdk.threads_enter()
+				progress_bar.set_text(_('Finished'))
+				gtk.gdk.threads_leave()
+			else:
+				gtk.gdk.threads_enter()
+				progress_bar.set_text(_('Transfer Failed'))
+				gtk.gdk.threads_leave()
+				
 
 			# Insensitise all widgets			
 			for widget in ['progress_hbox1', 'progress_hbox2']:
