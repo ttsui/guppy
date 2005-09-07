@@ -289,8 +289,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkVBox" id="vbox2">
-	      <property name="visible">True</property>
+	    <widget class="GtkVBox" id="transfer_frame">
 	      <property name="homogeneous">False</property>
 	      <property name="spacing">0</property>
 
@@ -326,7 +325,39 @@
 		  </child>
 
 		  <child>
-		    <placeholder/>
+		    <widget class="GtkButton" id="transfer_frame_close_btn">
+		      <property name="visible">True</property>
+		      <property name="can_focus">True</property>
+		      <property name="label">gtk-close</property>
+		      <property name="use_stock">True</property>
+		      <property name="relief">GTK_RELIEF_NORMAL</property>
+		      <property name="focus_on_click">True</property>
+		      <signal name="clicked" handler="on_transfer_close_btn_clicked" last_modification_time="Tue, 06 Sep 2005 02:25:06 GMT"/>
+		    </widget>
+		    <packing>
+		      <property name="padding">0</property>
+		      <property name="expand">False</property>
+		      <property name="fill">False</property>
+		      <property name="pack_type">GTK_PACK_END</property>
+		    </packing>
+		  </child>
+
+		  <child>
+		    <widget class="GtkButton" id="transfer_frame_clear_btn">
+		      <property name="visible">True</property>
+		      <property name="can_focus">True</property>
+		      <property name="label">gtk-clear</property>
+		      <property name="use_stock">True</property>
+		      <property name="relief">GTK_RELIEF_NORMAL</property>
+		      <property name="focus_on_click">True</property>
+		      <signal name="clicked" handler="on_transfer_clear_btn_clicked" last_modification_time="Tue, 06 Sep 2005 02:30:09 GMT"/>
+		    </widget>
+		    <packing>
+		      <property name="padding">0</property>
+		      <property name="expand">False</property>
+		      <property name="fill">False</property>
+		      <property name="pack_type">GTK_PACK_END</property>
+		    </packing>
 		  </child>
 		</widget>
 		<packing>
@@ -396,10 +427,10 @@
 	<widget class="GtkHBox" id="hbox18">
 	  <property name="visible">True</property>
 	  <property name="homogeneous">False</property>
-	  <property name="spacing">50</property>
+	  <property name="spacing">40</property>
 
 	  <child>
-	    <widget class="GtkFrame" id="frame1">
+	    <widget class="GtkFrame" id="pvr_status_frame">
 	      <property name="visible">True</property>
 	      <property name="label_xalign">0</property>
 	      <property name="label_yalign">0.5</property>
@@ -451,7 +482,7 @@
 		      <child>
 			<widget class="GtkLabel" id="pvr_free_space_label">
 			  <property name="visible">True</property>
-			  <property name="label" translatable="yes">Free Space: 100 MB</property>
+			  <property name="label" translatable="yes"></property>
 			  <property name="use_underline">False</property>
 			  <property name="use_markup">False</property>
 			  <property name="justify">GTK_JUSTIFY_FILL</property>
@@ -485,7 +516,7 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkFrame" id="frame2">
+	    <widget class="GtkFrame" id="pc_status_frame">
 	      <property name="visible">True</property>
 	      <property name="label_xalign">0</property>
 	      <property name="label_yalign">0.5</property>
@@ -537,7 +568,7 @@
 		      <child>
 			<widget class="GtkLabel" id="pc_free_space_label">
 			  <property name="visible">True</property>
-			  <property name="label" translatable="yes">Free Space: 2 GB</property>
+			  <property name="label" translatable="yes"></property>
 			  <property name="use_underline">False</property>
 			  <property name="use_markup">False</property>
 			  <property name="justify">GTK_JUSTIFY_FILL</property>

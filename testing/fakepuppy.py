@@ -38,14 +38,27 @@ for opt, optarg in opts:
 			size = True
 
 if transfer:
-	inc = 2 
+	print 'args = ', args
+	if len(args) != 2:
+		print 'ERROR: Insufficent arguments for transfer command'
+		sys.exit(1)
+	
+	src = args[0]
+	dst = args[1]
+
+	file = open(dst, 'w')
+
+	inc = 5
 	percent = 0.0
 	for i in xrange(100/inc):
 		percent = percent + inc
 		print >> sys.stderr, "\r%6.2f%%, %5.2f Mbits/s, %02d:%02d:%02d elapsed, %d:%02d:%02d remaining" % (percent, 2.2, 1, 1, 1, 2, 2, 2),
+		file.write(str(percent) + '\n')
 		time.sleep(0.5)
-		if percent > 15:
-			sys.exit(1)
+#		if percent > 15:
+#			sys.exit(1)
+
+	file.close()
 	print
 elif listdir:
 	listing = open(DATA_DIR + 'puppy-listdir.txt')

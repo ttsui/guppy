@@ -18,13 +18,15 @@
 import os
 import popen2
 import signal
+import time
 
 # Set to True for debug output
 DEBUG = False
 
 class Puppy:
 	# puppy error code for lock failure
-	E_GLOBAL_LOCK = 8;
+	E_GLOBAL_LOCK = 8
+	E_HDD_NOT_READY = 185
 	
 	def __init__(self):
 		self.cmd = 'puppy'
@@ -239,8 +241,13 @@ class Puppy:
 		self.popen_obj = popen2.Popen4(cmd)
 		self.popen_obj.tochild.close()
 		
-		if self.getStatus(wait=False) == Puppy.E_GLOBAL_LOCK:
+		status = self.getStatus(wait=False)
+		if status == Puppy.E_GLOBAL_LOCK:
 			raise PuppyError(self.popen_obj.fromchild.readlines())
+		elif status == Puppy.E_HDD_NOT_READY:
+			time.sleep(1)
+			self.popen_obj = popen2.Popen4(cmd)
+			self.popen_obj.tochild.close()
 			
 		return self.popen_obj.fromchild
 

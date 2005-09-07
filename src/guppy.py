@@ -36,6 +36,7 @@ import gettext
 import puppy
 
 APP_NAME = 'guppy'
+VERSION = '0.0.2'
 
 def humanReadableSize(size):
 	div_count = 0
@@ -210,9 +211,6 @@ class PVRFileSystemModel(FileSystemModel):
 
 
 	def changeDir(self, dir=None):
-		if len(self) > 0:
-			self.clear()
-			
 		if dir:
 			if dir[0] != '\\':
 				dir = self.current_dir + '\\' + dir
@@ -225,7 +223,15 @@ class PVRFileSystemModel(FileSystemModel):
 		else:
 			self.current_dir = '\\'
 
-		pvr_files = self.puppy.listDir(self.current_dir)
+		# We can't get a listing during a file transfer
+		try:
+			pvr_files = self.puppy.listDir(self.current_dir)
+		except:
+			return
+
+		# Clear model
+		if len(self) > 0:
+			self.clear()
 
 		for file in pvr_files:
 			# TODO: Set icon based on file type. Use dummy icon for now
@@ -309,6 +315,8 @@ class PCFileSystemModel(FileSystemModel):
 		return humanReadableSize(int(output[3])*1024)
 			
 class GuppyWindow:
+	FREE_SPACE_UPDATE_INTERVAL = 5000 # 5 secs
+	
 	def __init__(self):	
 		# Find out proper way to find glade files
 		guppy_glade_file = 'guppy.glade'
@@ -340,15 +348,21 @@ class GuppyWindow:
 		self.pvr_model = PVRFileSystemModel()
 		self.pc_model = PCFileSystemModel()
 		
-		self.free_space_timeout_id = gobject.timeout_add(5000, self.update_free_space)
-		self.update_free_space()
-		
+		self.free_space_timeout_id = gobject.timeout_add(GuppyWindow.FREE_SPACE_UPDATE_INTERVAL, self.update_free_space)
+
+		# Queue to put files to be transferred. The transfer thread gets files
+		# to transfer from this queue.
 		self.transfer_queue = Queue.Queue(0)
+		
+		# Queue to put all files which has been transferred. Files on this queue
+		# are removed when the Transfer Frame Clear button is clicked.
+		self.transfer_complete_queue = Queue.Queue(0)
+		
+		# Create thread to transfer files
 		self.transfer_thread = TransferThread(self)
 		self.transfer_thread.setDaemon(True)
 		self.transfer_thread.start()
 		
-		self.transfer_frame_shown_once = False
 		
 	def initUIManager(self):
 		self.uimanager = gtk.UIManager()
@@ -366,34 +380,32 @@ class GuppyWindow:
 		actiongroup.add_toggle_actions([('Turbo', gtk.STOCK_EXECUTE, 'Tur_bo', None, 'Turbo Transfer', self.on_turbo_toggled),
 		                                ('ShowHidden', None, 'Show Hidden Files', None, 'Show hidden files', self.on_show_hidden_toggled),
 		                                ('ShowFileTransfer', None, 'Show File Transfer', None, 'Show File Transfer', self.on_show_file_transfer_toggled)])
-		                                
+
+		# Create reference to ShowFileTransfer action so we can update the
+		# toggle state accordingly when the transfer frame close button is
+		# clicked.
+		self.show_file_transfer_action = actiongroup.get_action('ShowFileTransfer')
 		
 		self.uimanager.insert_action_group(actiongroup, 0)
 		
+		# Create separate action group for upload so sensitivity can be set
+		# according to selection in PC file tree
 		self.upload_actiongrp = gtk.ActionGroup('UploadAction')                                 
 		self.upload_actiongrp.add_actions([('Upload', gtk.STOCK_GO_BACK, '_Upload', None, 'Upload File', self.on_upload_btn_clicked)])
 		self.upload_actiongrp.set_sensitive(False)
 		self.uimanager.insert_action_group(self.upload_actiongrp, 1)
 
+		# Create separate action group for download so sensitivity can be set
+		# according to selection in PVR file tree
 		self.download_actiongrp = gtk.ActionGroup('DownloadAction')                                 
 		self.download_actiongrp.add_actions([('Download', gtk.STOCK_GO_FORWARD, '_Download', None, 'Download File', self.on_download_btn_clicked)])
 		self.download_actiongrp.set_sensitive(False)
 		self.uimanager.insert_action_group(self.download_actiongrp, 2)
 		
 		self.uimanager.add_ui_from_file('guppy-gtk.xml')
-		
-	
+
 	
 	def customWidgetHandler(self, glade, func_name, widget_name, str1, str2, int1, int2, *args):
-#		print 'glade = ', glade
-#		print 'func_name = ', func_name
-#		print 'widget_name = ', widget_name
-#		print 'str1 = ', str1
-#		print 'str2 = ', str2
-#		print 'int1 = ', int1
-#		print 'int2 = ', int2
-#		print 'args = ',  args
-		
 		handler = getattr(self, func_name)
 		return handler(str1, str2, int1, int2)
 		
@@ -461,6 +473,7 @@ class GuppyWindow:
 			treeview.append_column(col)
 			liststore.set_sort_func(FileSystemModel.SIZE_COL, sort_func, FileSystemModel.SIZE_COL)
 
+		
 	def createMenuBar(self, str1, str2, int1, int2, *args):
 		return self.uimanager.get_widget('/MenuBar')
 		
@@ -488,7 +501,7 @@ class GuppyWindow:
 		dialog.set_name('Guppy')
 		dialog.set_authors(['Tony Tsui tsui.tony@gmail.com'])
 		dialog.set_copyright('Copyright 2005 Tony Tsui')
-		dialog.set_version('0.0.1')
+		dialog.set_version(VERSION)
 		dialog.set_license('GNU Public License')
 		dialog.show()
 	
@@ -516,9 +529,9 @@ class GuppyWindow:
 		
 	def on_quit(self, widget, data=None):
 		gtk.main_quit()
+		self.puppy.cancelTransfer()
 		
 	def on_show_file_transfer_toggled(self, widget, data=None):
-		# Show progress frame
 		transfer_frame = self.glade_xml.get_widget('transfer_frame')
 		if not transfer_frame.get_property('visible'):
 			self.show_transfer_frame()
@@ -584,6 +597,23 @@ class GuppyWindow:
 	def on_upload_btn_clicked(self, widget, data=None):
 		self.transferFile('upload')
 
+	def on_transfer_clear_btn_clicked(self, widget, data=None):
+		# Loop until we get a Queue.Empty exception
+		while True:
+			try:
+				file_transfer = self.transfer_complete_queue.get_nowait()
+			except Queue.Empty:
+				break
+
+			progress_box = file_transfer.xml.get_widget('progress_box')
+			# progress_box may be None if the Remove button was clicked on it
+			if progress_box:
+				progress_box.destroy()
+	
+	def on_transfer_close_btn_clicked(self, widget, data=None):
+		self.show_file_transfer_action.set_active(False)
+		self.on_show_file_transfer_toggled(widget)
+
 	def on_transfer_remove_btn_clicked(self, widget, file_transfer):
 		file_transfer.cancel()
 		
@@ -593,26 +623,16 @@ class GuppyWindow:
 	def on_transfer_stop_btn_clicked(self, widget, data=None):
 		self.puppy.cancelTransfer()
 
-		# Update FileSystemModel view				
-		models = [ (self.pc_model, self.pc_treeview), (self.pvr_model, self.pvr_treeview) ]
-		for model, treeview in models:
-			handler_id = treeview.get_data('changed_handler_id')
-			selection = treeview.get_selection()
-			selection.handler_block(handler_id)
-			model.changeDir()
-			selection.handler_unblock(handler_id)
 	
 	def show_transfer_frame(self):
 		# Set position of pane separator
 		# Give progress frame height of 180 pixels. This should be enough room
 		# to show two file transfers.
 		vpane = self.glade_xml.get_widget('vpane')
-		vpane.set_position(vpane.get_allocation().height - 180)
+		vpane.set_position(vpane.get_allocation().height - 185)
 		
 		transfer_frame = self.glade_xml.get_widget('transfer_frame')
 		transfer_frame.show()
-		
-		self.transfer_frame_shown_once = True
 		
 	def transferFile(self, direction):
 		if direction == 'download':
@@ -646,15 +666,9 @@ class GuppyWindow:
 			dialog.destroy()
 			if response == gtk.RESPONSE_NO or response == gtk.RESPONSE_DELETE_EVENT:
 				return
-		
-		# Stop free space update timer
-#		gobject.source_remove(self.free_space_timeout_id)
 
 		queue_box = self.glade_xml.get_widget('queue_vbox')
-	
-		# Show the file transfer frame at least once to the user
-		if not self.transfer_frame_shown_once:
-			self.show_transfer_frame()
+		self.show_transfer_frame()
 
 		file_count = len(files)
 		file_no = 1
@@ -714,10 +728,26 @@ class GuppyWindow:
 
 			self.transfer_queue.put(file_transfer, True, None)
 
-	def update_free_space(self):		
+
+	def update_treeviews(self):		
+		# Update FileSystemModel view				
+		models = [ (self.pc_model, self.pc_treeview), (self.pvr_model, self.pvr_treeview) ]
+		for model, treeview in models:
+			handler_id = treeview.get_data('changed_handler_id')
+			selection = treeview.get_selection()
+			selected_rows = selection.get_selected_rows()
+			selection.handler_block(handler_id)
+			model.changeDir()
+			selection.handler_unblock(handler_id)
+			for path in selected_rows[1]:
+				selection.select_path(path)
+			
+	def update_free_space(self):
 		self.pvr_free_space_label.set_text(_('Free Space') + ': ' + self.pvr_model.freeSpace())
 		self.pc_free_space_label.set_text(_('Free Space') + ': ' + self.pc_model.freeSpace())
 		return True
+
+
 		
 class FileTransfer:
 	def __init__(self, direction, src, dst, xml):
@@ -726,13 +756,16 @@ class FileTransfer:
 		self.dst = dst
 		self.xml = xml
 		
-		self.cancelled = False
+		self.alive = True
 	
-	def isCancelled(self):
-		return self.cancelled
+	def isAlive(self):
+		return self.alive
 		
 	def cancel(self):
-		self.cancelled = True
+		self.alive = False
+	
+	def complete(self):
+		self.alive = False
 		
 class TransferThread(threading.Thread):
 	NUM_OF_RESET_ATTEMPTS = 6
@@ -742,17 +775,18 @@ class TransferThread(threading.Thread):
 		threading.Thread.__init__(self)
 		self.guppy = guppy
 		self.file_queue = self.guppy.transfer_queue
+		self.complete_queue = self.guppy.transfer_complete_queue
 
 	def run(self):
 		while True:
-			transfer_obj = self.file_queue.get(True, None)
-			if transfer_obj.isCancelled():
+			file_transfer = self.file_queue.get(True, None)
+			if not file_transfer.isAlive():
 				continue
 				
-			direction = transfer_obj.direction
-			src_file = transfer_obj.src
-			dst_file = transfer_obj.dst
-			xml = transfer_obj.xml
+			direction = file_transfer.direction
+			src_file = file_transfer.src
+			dst_file = file_transfer.dst
+			xml = file_transfer.xml
 			
 			# Make all widgets in progress box active
 			for widget in ['progress_hbox1', 'progress_hbox2']:
@@ -814,6 +848,10 @@ class TransferThread(threading.Thread):
 
 					continue
 
+				# Transfer may have completed
+				if percent is None:
+					break
+					
 				gtk.gdk.threads_enter()
 				progress_bar.set_fraction(float(percent)/100)
 				gtk.gdk.threads_leave()
@@ -852,9 +890,20 @@ class TransferThread(threading.Thread):
 			gtk.gdk.threads_enter()
 			stop_btn.hide()
 			gtk.gdk.threads_leave()
+			
 			gtk.gdk.threads_enter()
 			remove_btn.show()
 			gtk.gdk.threads_leave()
+
+			file_transfer.complete()
+			
+			# Update file treeviews
+			gtk.gdk.threads_enter()
+			self.guppy.update_treeviews()
+			gtk.gdk.threads_leave()
+			
+			# Put on queue for completed transfers
+			self.complete_queue.put(file_transfer)
 
 if __name__ == "__main__":
 	locale.setlocale(locale.LC_ALL, '')
