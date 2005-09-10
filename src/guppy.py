@@ -236,7 +236,6 @@ class PVRFileSystemModel(FileSystemModel):
 		try:
 			pvr_files = self.puppy.listDir(dir)
 		except puppy.PuppyBusyError:
-			print 'self.current_dir = ', self.current_dir
 			msg = _('Can not change directory during a file transfer')
 			dialog = gtk.MessageDialog(type=gtk.MESSAGE_INFO,
 			                           buttons=gtk.BUTTONS_CLOSE,

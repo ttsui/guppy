@@ -19,11 +19,14 @@ import os
 import popen2
 import signal
 import time
+import fcntl
 
 # Set to True for debug output
-DEBUG = True
+DEBUG = False
 
 class Puppy:
+	LOCK_FILE = '/tmp/puppy'
+	
 	# puppy error code for lock failure
 	E_GLOBAL_LOCK = 8
 	E_HDD_NOT_READY = 185
@@ -232,6 +235,19 @@ class Puppy:
 		
 		return True
 
+	def _anotherPuppyActive(self):
+		lock_file = open(Puppy.LOCK_FILE, 'a')
+		
+		try:
+			fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+			result = False
+		except:
+			result = True
+			
+		lock_file.close()
+	
+		return result
+		
 	def _execute(self, args):
 		cmd = self.cmd
 		if self.turbo == True:
@@ -240,7 +256,10 @@ class Puppy:
 		
 		if DEBUG:
 			print 'cmd = ', cmd
-		
+
+		if self._anotherPuppyActive():
+			raise PuppyBusyError('Can not get exclusive lock on ' + Puppy.LOCK_FILE)
+			
 		self.popen_obj = popen2.Popen4(cmd)
 		self.popen_obj.tochild.close()
 		
