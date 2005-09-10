@@ -228,16 +228,26 @@ class PVRFileSystemModel(FileSystemModel):
 
 		norm_path = os.path.normpath(dir.replace('\\', '/'))
 		if norm_path != '.':
-			self.current_dir = norm_path.replace('/', '\\')
+			dir = norm_path.replace('/', '\\')
 		else:
-			self.current_dir = ''
+			dir = ''
 
 		# We can't get a listing during a file transfer
 		try:
-			pvr_files = self.puppy.listDir(self.current_dir)
-		except:
+			pvr_files = self.puppy.listDir(dir)
+		except puppy.PuppyBusyError:
+			print 'self.current_dir = ', self.current_dir
+			msg = _('Can not change directory during a file transfer')
+			dialog = gtk.MessageDialog(type=gtk.MESSAGE_INFO,
+			                           buttons=gtk.BUTTONS_CLOSE,
+			                           message_format=msg)
+			response = dialog.run()
+			dialog.destroy()
+
 			return
 
+		self.current_dir = dir
+		
 		# Clear model
 		if len(self) > 0:
 			self.clear()
@@ -371,7 +381,7 @@ class GuppyWindow:
 		self.transfer_thread = TransferThread(self)
 		self.transfer_thread.setDaemon(True)
 		self.transfer_thread.start()
-		
+	
 		
 	def initUIManager(self):
 		self.uimanager = gtk.UIManager()

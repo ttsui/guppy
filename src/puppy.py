@@ -89,8 +89,11 @@ class Puppy:
 			         "%s %s %s %s" % (entry[2], entry[3], entry[4], entry[6]),
 			         entry[1] ]
 			listing.append(item)
-			
-		if self.getStatus() != 0:
+		
+		status = self.getStatus()	
+		if status == Puppy.E_GLOBAL_LOCK:
+			raise PuppyBusyError(str(output))
+		elif status != 0:
 			raise PuppyError("listDir failed. puppy returned: " + str(output))
 		
 		return listing
@@ -243,7 +246,7 @@ class Puppy:
 		
 		status = self.getStatus(wait=False)
 		if status == Puppy.E_GLOBAL_LOCK:
-			raise PuppyError(self.popen_obj.fromchild.readlines())
+			raise PuppyBusyError(self.popen_obj.fromchild.readlines())
 		elif status == Puppy.E_HDD_NOT_READY:
 			time.sleep(1)
 			self.popen_obj = popen2.Popen4(cmd)
@@ -256,3 +259,10 @@ class PuppyError(Exception):
 		self.value = value
 	def __str__(self):
 		return repr(self.value)
+
+class PuppyBusyError(Exception):
+	def __init__(self, value):
+		self.value = value
+	def __str__(self):
+		return repr(self.value)
+	
