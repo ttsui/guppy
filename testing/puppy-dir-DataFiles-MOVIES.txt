@@ -1,0 +1,4 @@
+d                    0 Thu Jan  1 09:59:59 1970 ..
+f           1227841536 Mon May 30 21:00:00 2005 STAR WARS - A NEW HOPE.rec
+f           1227841536 Mon May 30 21:00:00 2005 STAR WARS - THE EMPIRE STRIKES BACK.rec
+f           1227841536 Mon May 30 21:00:00 2005 STAR WARS - RETURN OF THE JEDI.rec

@@ -61,7 +61,12 @@ if transfer:
 	file.close()
 	print
 elif listdir:
-	listing = open(DATA_DIR + 'puppy-listdir.txt')
+	dir = ''
+	if len(args) > 0 and len(args[0]):
+		dir = '-'
+		dir += args[0].replace('\\', '-')
+	list_file = 'puppy-dir' + dir + '.txt'
+	listing = open(DATA_DIR + list_file)
 	for line in listing:
 		print line,
 	listing.close()
