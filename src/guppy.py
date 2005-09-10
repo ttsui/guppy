@@ -35,8 +35,13 @@ import gettext
 
 import puppy
 
-APP_NAME = 'guppy'
+APP_NAME = 'Guppy'
 VERSION = '0.0.2'
+AUTHORS = ['Tony Tsui tsui.tony@gmail.com']
+WEBSITE = 'http://guppy.nongnu.org'
+COPYRIGHT = 'Copyright (C) 2005 Tony Tsui'
+LICENSE = 'GNU Public License'
+
 
 def humanReadableSize(size):
 	div_count = 0
@@ -212,7 +217,11 @@ class PVRFileSystemModel(FileSystemModel):
 
 	def changeDir(self, dir=None):
 		if dir:
-			if dir[0] != '\\':
+			# PVR root dir path is an empty string. Using '\' character does not
+			# work.
+			if dir == '\\':
+				self.current_dir = ''
+			elif len(self.current_dir) > 0 and self.current_dir[-1] != '\\':
 				dir = self.current_dir + '\\' + dir
 		else:
 			dir = self.current_dir
@@ -221,7 +230,7 @@ class PVRFileSystemModel(FileSystemModel):
 		if norm_path != '.':
 			self.current_dir = norm_path.replace('/', '\\')
 		else:
-			self.current_dir = '\\'
+			self.current_dir = ''
 
 		# We can't get a listing during a file transfer
 		try:
@@ -498,11 +507,12 @@ class GuppyWindow:
 
 	def on_about(self, widget, data=None):	
 		dialog = gtk.AboutDialog()
-		dialog.set_name('Guppy')
-		dialog.set_authors(['Tony Tsui tsui.tony@gmail.com'])
-		dialog.set_copyright('Copyright 2005 Tony Tsui')
+		dialog.set_name(APP_NAME)
+		dialog.set_authors(AUTHORS)
+		dialog.set_copyright(COPYRIGHT)
 		dialog.set_version(VERSION)
-		dialog.set_license('GNU Public License')
+		dialog.set_license(LICENSE)
+		dialog.set_website(WEBSITE)
 		dialog.show()
 	
 	def on_column_clicked(self, col, data):
@@ -560,23 +570,21 @@ class GuppyWindow:
 		if total_size > 0:
 			msg = _('Selection Size') + ': ' + humanReadableSize(total_size)
 		else:
-			msg = None
+			msg = _('Selection Size') + ':'
 		
 		if isinstance(fs_model, PCFileSystemModel):
-			if msg:
-				self.pc_total_size_label.set_text(msg)
-				self.upload_actiongrp.set_sensitive(True)
-			else:
-				self.pc_total_size_label.set_text('')
-				self.upload_actiongrp.set_sensitive(False)
+			label = self.pc_total_size_label
+			actiongrp = self.upload_actiongrp
 		else:
-			if msg:
-				self.pvr_total_size_label.set_text(msg)
-				self.download_actiongrp.set_sensitive(True)
-			else:
-				self.pvr_total_size_label.set_text('')
-				self.download_actiongrp.set_sensitive(False)
-		
+			label = self.pvr_total_size_label
+			actiongrp = self.download_actiongrp
+			
+		label.set_text(msg)
+		if total_size > 0:
+			actiongrp.set_sensitive(True)
+		else:
+			actiongrp.set_sensitive(False)
+	
 	def on_treeview_row_activated(self, widget, path, col, fs_model):
 		model = widget.get_model()
 		iter = model.get_iter(path)

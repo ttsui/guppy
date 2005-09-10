@@ -21,7 +21,7 @@ import signal
 import time
 
 # Set to True for debug output
-DEBUG = False
+DEBUG = True
 
 class Puppy:
 	# puppy error code for lock failure
@@ -73,7 +73,7 @@ class Puppy:
 	def listDir(self, path=None):
 		args = '-c dir'
 		if path != None:
-			args += ' ' + path
+			args += " '" + path + "'"
 			
 		output_file = self._execute(args)
 
@@ -99,9 +99,9 @@ class Puppy:
 	def getFile(self, src_file, dest_file=None):
 		args = '-c get' + ' "' + src_file + '"'
 		if dest_file != None:
-			args += ' "' + dest_file + '"'
+			args += " '" + dest_file + "'"
 		else:
-			args += ' "' + os.path.basename(src_file) + '"'
+			args += " '" + os.path.basename(src_file) + "'"
 			
 		self.progress_output = self._execute(args)
 
@@ -114,9 +114,9 @@ class Puppy:
 	def putFile(self, src_file, dest_file=None):
 		args = '-c put' + ' "' + src_file + '"'
 		if dest_file != None:
-			args += ' "' + dest_file + '"'
+			args += " '" + dest_file + "'"
 		else:
-			args += ' "' + os.path.basename(src_file) + '"'
+			args += " '" + os.path.basename(src_file) + "'"
 			
 		self.progress_output = self._execute(args)
 		
