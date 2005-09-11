@@ -1,7 +1,12 @@
 # Guppy Makefile to create source distribution
 #
-VERSION = 0.0.2
-SRC = src/guppy.py src/puppy.py src/guppy.glade src/guppy-gtk.xml
+VERSION = 0.0.3
+SRC = src/guppy.py \
+      src/puppy.py \
+      src/FileSystemModel.py \
+      src/util.py \
+      src/guppy.glade \
+      src/guppy-gtk.xml
 FILES = COPYING README AUTHORS NEWS
 BUILD_DIR = dist/guppy-$(VERSION)
 
