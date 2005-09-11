@@ -19,11 +19,14 @@ import os
 import popen2
 import signal
 import time
+import fcntl
 
 # Set to True for debug output
-DEBUG = True
+DEBUG = False
 
 class Puppy:
+	LOCK_FILE = '/tmp/puppy'
+	
 	# puppy error code for lock failure
 	E_GLOBAL_LOCK = 8
 	E_HDD_NOT_READY = 185
@@ -89,8 +92,11 @@ class Puppy:
 			         "%s %s %s %s" % (entry[2], entry[3], entry[4], entry[6]),
 			         entry[1] ]
 			listing.append(item)
-			
-		if self.getStatus() != 0:
+		
+		status = self.getStatus()	
+		if status == Puppy.E_GLOBAL_LOCK:
+			raise PuppyBusyError(str(output))
+		elif status != 0:
 			raise PuppyError("listDir failed. puppy returned: " + str(output))
 		
 		return listing
@@ -229,6 +235,19 @@ class Puppy:
 		
 		return True
 
+	def _anotherPuppyActive(self):
+		lock_file = open(Puppy.LOCK_FILE, 'a')
+		
+		try:
+			fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+			result = False
+		except:
+			result = True
+			
+		lock_file.close()
+	
+		return result
+		
 	def _execute(self, args):
 		cmd = self.cmd
 		if self.turbo == True:
@@ -237,13 +256,16 @@ class Puppy:
 		
 		if DEBUG:
 			print 'cmd = ', cmd
-		
+
+		if self._anotherPuppyActive():
+			raise PuppyBusyError('Can not get exclusive lock on ' + Puppy.LOCK_FILE)
+			
 		self.popen_obj = popen2.Popen4(cmd)
 		self.popen_obj.tochild.close()
 		
 		status = self.getStatus(wait=False)
 		if status == Puppy.E_GLOBAL_LOCK:
-			raise PuppyError(self.popen_obj.fromchild.readlines())
+			raise PuppyBusyError(self.popen_obj.fromchild.readlines())
 		elif status == Puppy.E_HDD_NOT_READY:
 			time.sleep(1)
 			self.popen_obj = popen2.Popen4(cmd)
@@ -256,3 +278,10 @@ class PuppyError(Exception):
 		self.value = value
 	def __str__(self):
 		return repr(self.value)
+
+class PuppyBusyError(Exception):
+	def __init__(self, value):
+		self.value = value
+	def __str__(self):
+		return repr(self.value)
+	
