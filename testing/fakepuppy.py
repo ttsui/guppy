@@ -63,7 +63,8 @@ if transfer:
 elif listdir:
 	dir = ''
 	if len(args) > 0 and len(args[0]):
-		dir = '-'
+		if args[0][0] != '\\':
+			dir = '-'
 		dir += args[0].replace('\\', '-')
 	list_file = 'puppy-dir' + dir + '.txt'
 	listing = open(DATA_DIR + list_file)

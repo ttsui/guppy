@@ -20,9 +20,6 @@
 import sys
 import os
 import stat
-import time
-import string
-import math
 import threading
 import Queue
 
@@ -465,10 +462,19 @@ class GuppyWindow:
 		for model, treeview in models:
 			handler_id = treeview.get_data('changed_handler_id')
 			selection = treeview.get_selection()
+			
+			# Store currently selected rows because they will be wiped when
+			# the data model is updated.
 			selected_rows = selection.get_selected_rows()
+			
 			selection.handler_block(handler_id)
+			# Update PVR file system cache
+			if isinstance(model, PVRFileSystemModel):
+				model.updateCache()
 			model.changeDir()
 			selection.handler_unblock(handler_id)
+			
+			# Reselect rows
 			for path in selected_rows[1]:
 				selection.select_path(path)
 			
@@ -609,7 +615,7 @@ class TransferThread(threading.Thread):
 				gtk.gdk.threads_leave()
 				
 
-			# Insensitise all widgets			
+			# Desensitise all widgets			
 			for widget in ['progress_hbox1', 'progress_hbox2']:
 				widget = xml.get_widget(widget)
 				gtk.gdk.threads_enter()

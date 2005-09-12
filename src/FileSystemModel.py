@@ -19,6 +19,7 @@ import os
 import stat
 import time
 import string
+import copy
 
 import gtk
 import gobject
@@ -26,9 +27,11 @@ import gobject
 import puppy
 from util import *
 
+# Set to True for debug output
+DEBUG = False
+
 class FileSystemModel(gtk.ListStore):
 	TYPE_COL, ICON_COL, NAME_COL, DATE_COL, SIZE_COL = range(5)
-	
 
 	def __init__(self):
 		self.current_dir = None
@@ -141,77 +144,6 @@ class FileSystemModel(gtk.ListStore):
 		else:
 			return 1
 
-
-class PVRFileSystemModel(FileSystemModel):
-	dir_sep = '\\'
-	def __init__(self):
-		FileSystemModel.__init__(self)
-
-		# FIXME: Get dir from when Guppy last exited
-		self.current_dir = ''
-
-		self.freespace = 0
-				
-		self.puppy = puppy.Puppy()
-		
-		self.changeDir()
-
-
-	def changeDir(self, dir=None):
-		if dir:
-			# PVR root dir path is an empty string. Using '\' character does not
-			# work.
-			if dir == '\\':
-				self.current_dir = ''
-			elif len(self.current_dir) > 0 and self.current_dir[-1] != '\\':
-				dir = self.current_dir + '\\' + dir
-		else:
-			dir = self.current_dir
-
-		norm_path = os.path.normpath(dir.replace('\\', '/'))
-		if norm_path != '.':
-			dir = norm_path.replace('/', '\\')
-		else:
-			dir = ''
-
-		# We can't get a listing during a file transfer
-		try:
-			pvr_files = self.puppy.listDir(dir)
-		except puppy.PuppyBusyError:
-			msg = _('Can not change directory during a file transfer')
-			dialog = gtk.MessageDialog(type=gtk.MESSAGE_INFO,
-			                           buttons=gtk.BUTTONS_CLOSE,
-			                           message_format=msg)
-			response = dialog.run()
-			dialog.destroy()
-
-			return
-
-		self.current_dir = dir
-		
-		# Clear model
-		if len(self) > 0:
-			self.clear()
-
-		for file in pvr_files:
-			# TODO: Set icon based on file type. Use dummy icon for now
-			if file[FileSystemModel.TYPE_COL] == 'd':
-				file.insert(FileSystemModel.ICON_COL, gtk.STOCK_DIRECTORY)
-			else:				
-				file.insert(FileSystemModel.ICON_COL, gtk.STOCK_FILE)
-				
-			file[FileSystemModel.SIZE_COL] = humanReadableSize(int(file[FileSystemModel.SIZE_COL]))
-			self.append(file)
-	
-	def freeSpace(self):
-		try:
-			total, free = self.puppy.getDiskSpace()
-			self.freespace = free
-		except:
-			pass
-
-		return humanReadableSize(self.freespace)
-
 class PCFileSystemModel(FileSystemModel):
 	def __init__(self):
 		FileSystemModel.__init__(self)
@@ -273,3 +205,166 @@ class PCFileSystemModel(FileSystemModel):
 		
 		# Multiple by 1024 to convert from kilobytes to bytes
 		return humanReadableSize(int(output[3])*1024)
+
+
+class PVRFileSystemModel(FileSystemModel):
+	def __init__(self):
+		FileSystemModel.__init__(self)
+
+		# FIXME: Get dir from when Guppy last exited
+		self.current_dir = ''
+
+		self.freespace = 0
+				
+		self.puppy = puppy.Puppy()
+
+		self.dir_tree = None
+		self.updateCache()
+				
+		self.changeDir()
+
+
+	def changeDir(self, dir=None):
+		"""Change directory and update model data accordingly.
+		"""
+		if dir:
+			# PVR root dir path is an empty string. Using '\' character does not
+			# work.
+			if dir == '\\':
+				self.current_dir = ''
+			elif len(self.current_dir) > 0 and self.current_dir[-1] != '\\':
+				dir = self.current_dir + '\\' + dir
+			else:
+				dir = self.current_dir + dir
+		else:
+			dir = self.current_dir
+
+		norm_path = os.path.normpath(dir.replace('\\', '/'))
+		print 'norm_path = ', norm_path
+		if norm_path != '.':
+			dir = norm_path.replace('/', '\\')
+		else:
+			dir = ''
+
+		dir_node = self.findDirectory(dir)
+		
+		self.current_dir = dir
+		
+		# Clear model
+		if len(self) > 0:
+			self.clear()
+
+		for file_name, file_info in dir_node.getFiles():  
+			file_info.insert(FileSystemModel.ICON_COL, gtk.STOCK_FILE)
+		
+			file_info[FileSystemModel.SIZE_COL] = humanReadableSize(int(file_info[FileSystemModel.SIZE_COL]))
+			
+			self.append(file_info)
+			
+		for dir, dir_info in dir_node.getDirectories():
+			dir_info.insert(FileSystemModel.ICON_COL, gtk.STOCK_DIRECTORY)
+		
+			dir_info[FileSystemModel.SIZE_COL] = humanReadableSize(int(dir_info[FileSystemModel.SIZE_COL]))
+			
+			self.append(dir_info)
+			
+		# Add ".." directory
+		self.append([ 'd', gtk.STOCK_DIRECTORY, '..', '', ''])
+
+	def findDirectory(self, path):
+		"""Find the DirectoryNode object for the given path.
+		
+		Returns: DirectoryNode object
+		"""
+		cur_node = self.dir_tree
+		
+		for dir in path.split('\\'):
+			if len(dir) == 0:
+				continue
+			cur_node, node_info = cur_node.getDirectory(dir)
+			if cur_node == None:
+				break
+
+		return cur_node
+				
+	def freeSpace(self):
+		"""Get amount of free space available on PVR hard disk.
+		"""
+		try:
+			total, free = self.puppy.getDiskSpace()
+			self.freespace = free
+		except:
+			pass
+
+		return humanReadableSize(self.freespace)
+
+	def scanDirectory(self, dir):
+		"""Recursively scan a directory for all subdirectories and files.
+		
+		This function recursivley scans the given directory for all subdirectories
+		and files. Each subdirectory and file is stored in the DirectoryNode object.
+		Return: DirectoryNode object representing the directory
+		"""
+		dir_node = DirectoryNode(dir.split('\\')[-1])
+		pvr_files = self.puppy.listDir(dir)
+		
+		for file in pvr_files:
+			if file[0] == 'd':
+				if file[1] != '..':
+					dir_node.addDirectory(self.scanDirectory(dir + '\\' + file[1]), file)
+			else:
+				dir_node.addFile(file[1], file)
+
+		return dir_node
+	
+	def updateCache(self):
+		"""Update the PVR file system cache.
+		
+		This function scans the entire PVR file system and creates a tree
+		representing all the files and directories.
+		"""
+		self.dir_tree = self.scanDirectory('')
+
+class DirectoryNode:
+	def __init__(self, name):
+		self.name = name
+		self.sub_directories = {}
+		self.files = []
+		
+	def addDirectory(self, dir, info):
+		if DEBUG:
+			print 'DirectoryNode[%s]: addDirectory(%s)' %(self.name, dir.name)
+		self.sub_directories[dir.name] = (dir, info)
+		
+	# Add list of DictoryNodes
+	def addDirectories(self, dirs):
+		self.sub_directories += dirs
+		
+	def addFile(self, name, info):
+		if DEBUG:
+			print 'DirectoryNode[%s]: addFile(%s)' %(self.name, name)
+		self.files.append((name, info))
+
+	# Add list of files		
+	def addFiles(self, files):
+		self.files += files
+		
+	def getDirectory(self, dir):
+		if DEBUG:
+			print 'DirectoryNode[%s]: getDirectory(%s)' %(self.name, dir)
+		try:
+			return self.sub_directories[dir]
+		except KeyError:
+			return None
+		
+	def getDirectories(self):
+		dir_list = []
+		
+		for name, (dir, dir_info) in self.sub_directories.items():
+			dir_list.append((dir, copy.copy(dir_info)))
+			
+		return dir_list
+		
+	def getFiles(self):
+		return copy.deepcopy(self.files)
+		

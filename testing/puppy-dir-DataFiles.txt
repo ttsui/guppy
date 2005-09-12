@@ -26,6 +26,4 @@ f           3604690944 Tue Jun 21 21:28:00 2005 BOSTON LEGAL-#-1.rec
 f           2329491456 Sun May 29 19:34:00 2005 The Real Da Vinci Code-1.rec
 f           3604883456 Tue Jun 21 23:28:00 2005 TRU CALIN-#.rec
 f           1541058560 Wed Jun 22 19:28:00 2005 FOODLOVERS-#-1.rec
-f           1227841536 Mon May 30 21:00:00 2005 JOHN SAFRAN V GOD-#-2.rec
-f           1194825728 Mon Jun 13 21:00:00 2005 JOHN SAFRAN V GOD-#-4.rec
 f           2097225728 Tue Jun 14 19:30:00 2005 INSIGHT-#-4.rec
