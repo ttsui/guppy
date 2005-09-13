@@ -7,6 +7,8 @@ import os
 import signal
 import fcntl
 
+SLOW_LISTDIR = False
+
 DATA_DIR='/local/devel/guppy/testing/'
 
 lock_filename =  '/tmp/' + os.path.basename(sys.argv[0])
@@ -71,6 +73,8 @@ elif listdir:
 	for line in listing:
 		print line,
 	listing.close()
+	if SLOW_LISTDIR:
+		time.sleep(0.5)
 elif size:
 	print 'Total %10u kiB %7u MiB %4u GiB' % (0, 0, 120)
 	print 'Free  %10u kiB %7u MiB %4u GiB' % (0, 500, 0)

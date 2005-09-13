@@ -20,6 +20,7 @@ import stat
 import time
 import string
 import copy
+import threading
 
 import gtk
 import gobject
@@ -218,9 +219,15 @@ class PVRFileSystemModel(FileSystemModel):
 				
 		self.puppy = puppy.Puppy()
 
+		self.dir_tree_lock = threading.Lock()
+
 		self.dir_tree = None
 		self.updateCache()
-				
+		
+		# The cache may not have been updated because puppy was busy. Try again.
+		if self.dir_tree == None:
+			self.updateCache()
+					
 		self.changeDir()
 
 
@@ -240,7 +247,6 @@ class PVRFileSystemModel(FileSystemModel):
 			dir = self.current_dir
 
 		norm_path = os.path.normpath(dir.replace('\\', '/'))
-		print 'norm_path = ', norm_path
 		if norm_path != '.':
 			dir = norm_path.replace('/', '\\')
 		else:
@@ -276,6 +282,7 @@ class PVRFileSystemModel(FileSystemModel):
 		
 		Returns: DirectoryNode object
 		"""
+		self.dir_tree_lock.acquire()
 		cur_node = self.dir_tree
 		
 		for dir in path.split('\\'):
@@ -284,6 +291,7 @@ class PVRFileSystemModel(FileSystemModel):
 			cur_node, node_info = cur_node.getDirectory(dir)
 			if cur_node == None:
 				break
+		self.dir_tree_lock.release()
 
 		return cur_node
 				
@@ -323,7 +331,23 @@ class PVRFileSystemModel(FileSystemModel):
 		This function scans the entire PVR file system and creates a tree
 		representing all the files and directories.
 		"""
-		self.dir_tree = self.scanDirectory('')
+		if DEBUG:
+			print 'Start updateCache()'
+			
+		self.dir_tree_lock.acquire()
+
+		try:
+			new_dir_tree = self.scanDirectory('')
+		except PuppyBusyError:
+			# Don't update directory tree if puppy busy
+			new_dir_tree = self.dir_tree
+			
+		self.dir_tree = new_dir_tree
+
+		self.dir_tree_lock.release()
+		
+		if DEBUG:
+			print 'End updateCache()'
 
 class DirectoryNode:
 	def __init__(self, name):

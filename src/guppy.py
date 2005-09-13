@@ -43,7 +43,7 @@ LICENSE = 'GNU Public License'
 
 			
 class GuppyWindow:
-	FREE_SPACE_UPDATE_INTERVAL = 5000 # 5 secs
+	SCREEN_INFO_UPDATE_INTERVAL = 10 * 60 * 1000 # 10 mins (unit in milliseconds)
 	
 	def __init__(self):	
 		# Find out proper way to find glade files
@@ -76,8 +76,11 @@ class GuppyWindow:
 		self.pvr_model = PVRFileSystemModel()
 		self.pc_model = PCFileSystemModel()
 		
-		self.free_space_timeout_id = gobject.timeout_add(GuppyWindow.FREE_SPACE_UPDATE_INTERVAL, self.update_free_space)
-
+		self.updateFreeSpace()
+		
+		# Timer to update screen info
+		gobject.timeout_add(GuppyWindow.SCREEN_INFO_UPDATE_INTERVAL, self.update_screen_info)
+		
 		# Queue to put files to be transferred. The transfer thread gets files
 		# to transfer from this queue.
 		self.transfer_queue = Queue.Queue(0)
@@ -456,7 +459,19 @@ class GuppyWindow:
 			self.transfer_queue.put(file_transfer, True, None)
 
 
-	def update_treeviews(self):		
+	def updateFreeSpace(self):			
+		self.pvr_free_space_label.set_text(_('Free Space') + ': ' + self.pvr_model.freeSpace())
+		self.pc_free_space_label.set_text(_('Free Space') + ': ' + self.pc_model.freeSpace())
+
+	def update_screen_info(self):
+		# Update amount of free space available
+		self.updateFreeSpace()
+		
+		# Update treeviews.
+		self.updateTreeViews()
+		return True
+
+	def updateTreeViews(self):		
 		# Update FileSystemModel view				
 		models = [ (self.pc_model, self.pc_treeview), (self.pvr_model, self.pvr_treeview) ]
 		for model, treeview in models:
@@ -477,11 +492,6 @@ class GuppyWindow:
 			# Reselect rows
 			for path in selected_rows[1]:
 				selection.select_path(path)
-			
-	def update_free_space(self):
-		self.pvr_free_space_label.set_text(_('Free Space') + ': ' + self.pvr_model.freeSpace())
-		self.pc_free_space_label.set_text(_('Free Space') + ': ' + self.pc_model.freeSpace())
-		return True
 
 
 		
@@ -544,8 +554,6 @@ class TransferThread(threading.Thread):
 			# Set width of Stop button to be the same as Remove button
 			gtk.gdk.threads_enter()
 			allocation = remove_btn.get_allocation()
-			gtk.gdk.threads_leave()
-			gtk.gdk.threads_enter()
 			stop_btn.set_size_request(allocation.width, allocation.height)
 			gtk.gdk.threads_leave()
 
@@ -590,29 +598,21 @@ class TransferThread(threading.Thread):
 					
 				gtk.gdk.threads_enter()
 				progress_bar.set_fraction(float(percent)/100)
-				gtk.gdk.threads_leave()
-				
-				gtk.gdk.threads_enter()
 				progress_bar.set_text('(' + time['remaining'] + ' ' + _('Remaining') + ')')
-				gtk.gdk.threads_leave()
-				
-				gtk.gdk.threads_enter()
+
 				while gtk.events_pending():
 					gtk.main_iteration()
 				gtk.gdk.threads_leave()
 			
+			gtk.gdk.threads_enter()
 			if transfer_successful:
-				gtk.gdk.threads_enter()
 				progress_bar.set_fraction(1)
-				gtk.gdk.threads_leave()
-				
-				gtk.gdk.threads_enter()
+
 				progress_bar.set_text(_('Finished'))
-				gtk.gdk.threads_leave()
 			else:
-				gtk.gdk.threads_enter()
 				progress_bar.set_text(_('Transfer Failed'))
-				gtk.gdk.threads_leave()
+
+			gtk.gdk.threads_leave()
 				
 
 			# Desensitise all widgets			
@@ -635,7 +635,7 @@ class TransferThread(threading.Thread):
 			
 			# Update file treeviews
 			gtk.gdk.threads_enter()
-			self.guppy.update_treeviews()
+			self.guppy.updateTreeViews()
 			gtk.gdk.threads_leave()
 			
 			# Put on queue for completed transfers
