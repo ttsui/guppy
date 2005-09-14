@@ -34,10 +34,17 @@ class Puppy:
 	def __init__(self):
 		self.cmd = 'puppy'
 		self.turbo = False
+		self.popen_obj = None
 		
 	def cancelTransfer(self):
+		if self.getStatus(wait=False) == None:
+			return
+			
 		if self.getStatus(wait=False) == -1:
 			os.kill(self.popen_obj.pid, signal.SIGTERM)
+			
+		# Reap child process
+		self.popen_obj.wait()
 		
 		return
 
@@ -212,6 +219,9 @@ class Puppy:
 		return percent, speed, time
 
 	def getStatus(self, wait=True):
+		if self.popen_obj == None:
+			return None
+			
 		if wait:
 			status = os.WEXITSTATUS(self.popen_obj.wait())
 		else:

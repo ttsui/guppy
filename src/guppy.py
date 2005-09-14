@@ -35,7 +35,7 @@ from FileSystemModel import *
 from util import *
 
 APP_NAME = 'Guppy'
-VERSION = '0.0.2'
+VERSION = '0.0.3'
 AUTHORS = ['Tony Tsui tsui.tony@gmail.com']
 WEBSITE = 'http://guppy.nongnu.org'
 COPYRIGHT = 'Copyright (C) 2005 Tony Tsui'
@@ -88,6 +88,10 @@ class GuppyWindow:
 		# Queue to put all files which has been transferred. Files on this queue
 		# are removed when the Transfer Frame Clear button is clicked.
 		self.transfer_complete_queue = Queue.Queue(0)
+
+		# Set by self.on_quit(), read by TransferThread.
+		self.is_quitting = False
+		self.quit_lock = threading.Lock()
 		
 		# Create thread to transfer files
 		self.transfer_thread = TransferThread(self)
@@ -253,16 +257,38 @@ class GuppyWindow:
 	def on_download_btn_clicked(self, widget, data=None):
 		self.transferFile('download')
 
-	def on_guppy_window_delete_event(self, widget, event, data=None):
+	def on_window_delete_event(self, widget, event, data=None):
 		self.on_quit(widget, data)
+		# Return True to stop event from propagating to default handler
+		# which destroys the window.
+		return True
 		
 	def on_path_entry_activate(self, widget, fs_model):
 		fs_model.changeDir(widget.get_text())
 		
 	def on_quit(self, widget, data=None):
-		gtk.main_quit()
+		# Empty out transfer queue so the TransferThread can't get another
+		# FileTransfer object after we cancel the current transfer.
+		while True:
+			try:
+				file_transfer = self.transfer_queue.get_nowait()
+			except Queue.Empty:
+				break
+				
+			file_transfer.cancel()
+			
+		# Stop transfer if one is in progress
 		self.puppy.cancelTransfer()
-		
+
+		# Set quit flag
+		self.quit_lock.acquire()
+		self.is_quitting = True
+		self.quit_lock.release()
+
+		# We don't call gtk.main_quit() here because the TransferThread may try
+		# to call some gtk functions. Instead the TransferThread will check
+		# the is_quitting flag and call gtk.main_quit() if it is set to True.
+				
 	def on_show_file_transfer_toggled(self, widget, data=None):
 		transfer_frame = self.glade_xml.get_widget('transfer_frame')
 		if not transfer_frame.get_property('visible'):
@@ -275,6 +301,19 @@ class GuppyWindow:
 		self.pc_liststore.get_model().refilter()
 		self.pvr_liststore.get_model().refilter()
 
+	def on_transfer_clear_btn_clicked(self, widget, data=None):
+		# Loop until we get a Queue.Empty exception
+		while True:
+			try:
+				file_transfer = self.transfer_complete_queue.get_nowait()
+			except Queue.Empty:
+				break
+
+			progress_box = file_transfer.xml.get_widget('progress_box')
+			# progress_box may be None if the Remove button was clicked on it
+			if progress_box:
+				progress_box.destroy()
+	
 	def on_treeview_changed(self, widget, fs_model):
 		model, files = widget.get_selected_rows()
 		
@@ -324,22 +363,6 @@ class GuppyWindow:
 	def on_turbo_toggled(self, widget, data=None):
 		self.puppy.setTurbo(widget.get_active())
 		
-	def on_upload_btn_clicked(self, widget, data=None):
-		self.transferFile('upload')
-
-	def on_transfer_clear_btn_clicked(self, widget, data=None):
-		# Loop until we get a Queue.Empty exception
-		while True:
-			try:
-				file_transfer = self.transfer_complete_queue.get_nowait()
-			except Queue.Empty:
-				break
-
-			progress_box = file_transfer.xml.get_widget('progress_box')
-			# progress_box may be None if the Remove button was clicked on it
-			if progress_box:
-				progress_box.destroy()
-	
 	def on_transfer_close_btn_clicked(self, widget, data=None):
 		self.show_file_transfer_action.set_active(False)
 		self.on_show_file_transfer_toggled(widget)
@@ -353,6 +376,11 @@ class GuppyWindow:
 	def on_transfer_stop_btn_clicked(self, widget, data=None):
 		self.puppy.cancelTransfer()
 
+	def on_upload_btn_clicked(self, widget, data=None):
+		self.transferFile('upload')
+
+	def reallyQuit(self):
+		gtk.main_quit()
 	
 	def show_transfer_frame(self):
 		# Set position of pane separator
@@ -525,10 +553,25 @@ class TransferThread(threading.Thread):
 
 	def run(self):
 		while True:
-			file_transfer = self.file_queue.get(True, None)
-			if not file_transfer.isAlive():
-				continue
 				
+			try:
+				file_transfer = self.file_queue.get(True, 1)
+			except Queue.Empty:
+				file_transfer = None
+
+			# Check if guppy is quiting
+			self.guppy.quit_lock.acquire()
+			if self.guppy.is_quitting:
+				self.guppy.quit_lock.release()
+				gtk.gdk.threads_enter()
+				self.guppy.reallyQuit()
+				gtk.gdk.threads_leave()
+				return
+			self.guppy.quit_lock.release()
+
+			if file_transfer == None or not file_transfer.isAlive():
+				continue
+
 			direction = file_transfer.direction
 			src_file = file_transfer.src
 			dst_file = file_transfer.dst

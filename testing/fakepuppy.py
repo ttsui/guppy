@@ -40,7 +40,6 @@ for opt, optarg in opts:
 			size = True
 
 if transfer:
-	print 'args = ', args
 	if len(args) != 2:
 		print 'ERROR: Insufficent arguments for transfer command'
 		sys.exit(1)
