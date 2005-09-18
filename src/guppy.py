@@ -317,7 +317,6 @@ class GuppyWindow:
 	def on_treeview_changed(self, widget, fs_model):
 		model, files = widget.get_selected_rows()
 		
-		file_no = 1
 		file_count = len(files)
 		total_size = 0
 		for path in files:
@@ -428,8 +427,7 @@ class GuppyWindow:
 		queue_box = self.glade_xml.get_widget('queue_vbox')
 		self.show_transfer_frame()
 
-		file_count = len(files)
-		file_no = 1
+		existing_files = []
 		for path in files:
 			iter = model.get_iter(path)
 			file = model.get_value(iter, FileSystemModel.NAME_COL)
@@ -439,26 +437,13 @@ class GuppyWindow:
 				dst_dir = self.pc_model.getCWD()
 				src_file = src_dir + '\\' + file
 				dst_file = dst_dir + '/' + file
-				existing_file = os.access(dst_file, os.F_OK)
+				file_exists = os.access(dst_file, os.F_OK)
 			else:
 				src_dir = self.pc_model.getCWD()
 				dst_dir = self.pvr_model.getCWD()
 				src_file = src_dir + '/' + file
 				dst_file = dst_dir + '\\' + file
-				existing_file = self.pvr_model.find(file)
-
-			if existing_file:
-				msg = _('The file') + ' "' + dst_file + '" ' + _('already exists. Would you like to replace it?')
-				msg2 = _('If you replace an existing file, its contents will be overwritten.')
-				dialog = gtk.MessageDialog(type=gtk.MESSAGE_QUESTION,
-				                           buttons=gtk.BUTTONS_YES_NO,
-				                           message_format=msg)
-				response = dialog.run()
-				dialog.destroy()
-
-				if response == gtk.RESPONSE_NO or response == gtk.RESPONSE_DELETE_EVENT:
-					file_no += 1
-					continue
+				file_exists = self.pvr_model.find(file)
 
 			xml = gtk.glade.XML('guppy.glade', 'progress_box')
 			xml.signal_autoconnect(self)		
@@ -475,8 +460,6 @@ class GuppyWindow:
 			file_label.set_text(file)
 			from_label.set_text(src_dir)
 			to_label.set_text(dst_dir)
-
-			queue_box.pack_start(progress_box, expand=False)
 	
 			file_transfer = FileTransfer(direction, src_file, dst_file, xml)
 
@@ -484,8 +467,37 @@ class GuppyWindow:
 			remove_btn = xml.get_widget('transfer_remove_button')
 			remove_btn.connect('clicked', self.on_transfer_remove_btn_clicked, file_transfer)
 
-			self.transfer_queue.put(file_transfer, True, None)
+			if file_exists:
+				existing_files.append(file_transfer)
+			else:
+				queue_box.pack_start(progress_box, expand=False)
+				self.transfer_queue.put(file_transfer, True, None)
 
+		# Confirm with user that they wish to overwrite existing files
+		replace_all = False
+		for file in existing_files:
+			if replace_all == False:
+				SKIP, REPLACE, REPLACE_ALL = range(3)
+				msg = _('The file') + ' "' + file.dst + '" ' + _('already exists. Would you like to replace it?')
+				msg2 = _('If you replace an existing file, its contents will be overwritten.')
+				dialog = gtk.MessageDialog(type=gtk.MESSAGE_QUESTION,
+				                           message_format=msg)
+				                           
+				if len(existing_files) > 1:
+					dialog.add_button(_('Replace All'), REPLACE_ALL)
+				dialog.add_buttons( _('Skip'), SKIP, _('Replace'), REPLACE)
+				response = dialog.run()
+				dialog.destroy()
+	
+				if response == SKIP or response == gtk.RESPONSE_DELETE_EVENT:
+					continue
+					
+				if response == REPLACE_ALL:
+					replace_all = True
+
+			progress_box = file.xml.get_widget('progress_box')
+			queue_box.pack_start(progress_box, expand=False)
+			self.transfer_queue.put(file, True, None)
 
 	def updateFreeSpace(self):			
 		self.pvr_free_space_label.set_text(_('Free Space') + ': ' + self.pvr_model.freeSpace())
