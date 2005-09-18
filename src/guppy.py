@@ -45,6 +45,9 @@ LICENSE = 'GNU Public License'
 class GuppyWindow:
 	SCREEN_INFO_UPDATE_INTERVAL = 10 * 60 * 1000 # 10 mins (unit in milliseconds)
 	
+	# Quit command to put on transfer queue
+	QUIT_CMD = 'Quit'
+	
 	def __init__(self):	
 		# Find out proper way to find glade files
 		guppy_glade_file = 'guppy.glade'
@@ -89,10 +92,6 @@ class GuppyWindow:
 		# are removed when the Transfer Frame Clear button is clicked.
 		self.transfer_complete_queue = Queue.Queue(0)
 
-		# Set by self.on_quit(), read by TransferThread.
-		self.is_quitting = False
-		self.quit_lock = threading.Lock()
-		
 		# Create thread to transfer files
 		self.transfer_thread = TransferThread(self)
 		self.transfer_thread.setDaemon(True)
@@ -283,14 +282,12 @@ class GuppyWindow:
 		# Stop transfer if one is in progress
 		self.puppy.cancelTransfer()
 
-		# Set quit flag
-		self.quit_lock.acquire()
-		self.is_quitting = True
-		self.quit_lock.release()
+		# Add QUIT command to transfer queue.
+		self.transfer_queue.put(GuppyWindow.QUIT_CMD)
 
 		# We don't call gtk.main_quit() here because the TransferThread may try
-		# to call some gtk functions. Instead the TransferThread will check
-		# the is_quitting flag and call gtk.main_quit() if it is set to True.
+		# to call some gtk functions. Instead if the TransferThread gets the
+		# QUIT_CMD from the transfer queue it will call gtk.main_quit().
 				
 	def on_show_file_transfer_toggled(self, widget, data=None):
 		transfer_frame = self.glade_xml.get_widget('transfer_frame')
@@ -578,22 +575,16 @@ class TransferThread(threading.Thread):
 	def run(self):
 		while True:
 				
-			try:
-				file_transfer = self.file_queue.get(True, 1)
-			except Queue.Empty:
-				file_transfer = None
+			file_transfer = self.file_queue.get(True, None)
 
 			# Check if guppy is quiting
-			self.guppy.quit_lock.acquire()
-			if self.guppy.is_quitting:
-				self.guppy.quit_lock.release()
+			if file_transfer == GuppyWindow.QUIT_CMD:
 				gtk.gdk.threads_enter()
 				self.guppy.reallyQuit()
 				gtk.gdk.threads_leave()
 				return
-			self.guppy.quit_lock.release()
-
-			if file_transfer == None or not file_transfer.isAlive():
+				
+			if not file_transfer.isAlive():
 				continue
 
 			direction = file_transfer.direction
