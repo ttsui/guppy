@@ -338,7 +338,7 @@ class PVRFileSystemModel(FileSystemModel):
 
 		try:
 			new_dir_tree = self.scanDirectory('')
-		except PuppyBusyError:
+		except puppy.PuppyBusyError:
 			# Don't update directory tree if puppy busy
 			new_dir_tree = self.dir_tree
 			
