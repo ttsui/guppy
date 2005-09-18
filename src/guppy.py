@@ -266,6 +266,9 @@ class GuppyWindow:
 	def on_path_entry_activate(self, widget, fs_model):
 		fs_model.changeDir(widget.get_text())
 		
+		if fs_model == self.pc_model:
+			self.updateFreeSpace(self.pc_model)
+		
 	def on_quit(self, widget, data=None):
 		# Empty out transfer queue so the TransferThread can't get another
 		# FileTransfer object after we cancel the current transfer.
@@ -354,8 +357,9 @@ class GuppyWindow:
 		if type == 'd':
 			fs_model.changeDir(name)
 			path = fs_model.getCWD()
-			if isinstance(fs_model, PCFileSystemModel):
+			if fs_model == self.pc_model:
 				self.pc_path_entry.set_text(path)
+				self.updateFreeSpace(self.pc_model)
 			else:
 				self.pvr_path_entry.set_text(path)
 			
@@ -499,9 +503,17 @@ class GuppyWindow:
 			queue_box.pack_start(progress_box, expand=False)
 			self.transfer_queue.put(file, True, None)
 
-	def updateFreeSpace(self):			
-		self.pvr_free_space_label.set_text(_('Free Space') + ': ' + self.pvr_model.freeSpace())
-		self.pc_free_space_label.set_text(_('Free Space') + ': ' + self.pc_model.freeSpace())
+	def updateFreeSpace(self, fs_model=None):			
+		'''Update label showing free space available on each file system.
+	
+		fs_model  Model to update free space. Default is None which updates both
+		          file system.
+		'''
+		if fs_model == self.pvr_model or fs_model == None:
+			self.pvr_free_space_label.set_text(_('Free Space') + ': ' + self.pvr_model.freeSpace())
+			
+		if fs_model == self.pc_model or fs_model == None:
+			self.pc_free_space_label.set_text(_('Free Space') + ': ' + self.pc_model.freeSpace())
 
 	def update_screen_info(self):
 		# Update amount of free space available
