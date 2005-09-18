@@ -213,6 +213,7 @@ class PVRFileSystemModel(FileSystemModel):
 		FileSystemModel.__init__(self)
 
 		# FIXME: Get dir from when Guppy last exited
+		# We need to use an empty string to list the PVR root directory.
 		self.current_dir = ''
 
 		self.freespace = 0
@@ -230,7 +231,6 @@ class PVRFileSystemModel(FileSystemModel):
 					
 		self.changeDir()
 
-
 	def changeDir(self, dir=None):
 		"""Change directory and update model data accordingly.
 		"""
@@ -247,10 +247,13 @@ class PVRFileSystemModel(FileSystemModel):
 			dir = self.current_dir
 
 		norm_path = os.path.normpath(dir.replace('\\', '/'))
-		if norm_path != '.':
-			dir = norm_path.replace('/', '\\')
-		else:
+		# norm_path is '.' when _dir_ is an empty string. _dir_ is an empty
+		# string for the PVR root directory.
+		# Also don't change dir when changing to '..' directory.
+		if norm_path == '.' or norm_path == '..':
 			dir = ''
+		else:
+			dir = norm_path.replace('/', '\\')
 
 		dir_node = self.findDirectory(dir)
 		
