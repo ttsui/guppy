@@ -1,2 +1,18 @@
+guppy-0.0.3: 20 Sep 2005
+	- Add support for changing directories during a file transfer.
+	- Update button labels on file overwrite dialog.
+
+guppy-0.0.2: 10 Sep 2005
+	- New file transfer user interface.
+	- More files can be added to download queue while a file transfer is
+	  in progress.
+	- Individual file transfers can be stopped and removed from the queue
+	- Handle transmission errors.
+	- Known Issues to be fixed in later versions:
+	  + It is not possible to change directories during a download.
+
+guppy-0.0.1.2: 30 Aug 2005
+	- No code changes. Only corrections to license.
+
 guppy-0.0.1: 19 Aug 2005
 	- First release
