@@ -48,9 +48,14 @@ class GuppyWindow:
 	# Quit command to put on transfer queue
 	QUIT_CMD = 'Quit'
 	
-	def __init__(self):	
+	def __init__(self, datadir=''):	
+		# Initialise Gtk thread support
+		gtk.gdk.threads_init()
+
+		self.datadir = datadir
+
 		# Find out proper way to find glade files
-		guppy_glade_file = 'guppy.glade'
+		guppy_glade_file = self.datadir + '/' + 'guppy.glade'
 
 		self.initUIManager()		
 
@@ -136,7 +141,7 @@ class GuppyWindow:
 		self.download_actiongrp.set_sensitive(False)
 		self.uimanager.insert_action_group(self.download_actiongrp, 2)
 		
-		self.uimanager.add_ui_from_file('guppy-gtk.xml')
+		self.uimanager.add_ui_from_file(self.datadir + 'guppy-gtk.xml')
 
 	
 	def customWidgetHandler(self, glade, func_name, widget_name, str1, str2, int1, int2, *args):
@@ -705,6 +710,5 @@ if __name__ == "__main__":
 	gettext.textdomain(APP_NAME)
 	gettext.install(APP_NAME, 'i18n', unicode=1)
 	
-	gtk.gdk.threads_init()
 	guppy = GuppyWindow()
 	guppy.run()
