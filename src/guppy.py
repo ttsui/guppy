@@ -291,7 +291,7 @@ class GuppyWindow:
 				
 	def on_show_file_transfer_toggled(self, widget, data=None):
 		transfer_frame = self.glade_xml.get_widget('transfer_frame')
-		if not transfer_frame.get_property('visible'):
+		if widget.get_active():
 			self.show_transfer_frame()
 		else:
 			transfer_frame.hide()
@@ -365,7 +365,6 @@ class GuppyWindow:
 		
 	def on_transfer_close_btn_clicked(self, widget, data=None):
 		self.show_file_transfer_action.set_active(False)
-		self.on_show_file_transfer_toggled(widget)
 
 	def on_transfer_remove_btn_clicked(self, widget, file_transfer):
 		file_transfer.cancel()
@@ -387,7 +386,7 @@ class GuppyWindow:
 		# Give progress frame height of 180 pixels. This should be enough room
 		# to show two file transfers.
 		vpane = self.glade_xml.get_widget('vpane')
-		vpane.set_position(vpane.get_allocation().height - 185)
+		vpane.set_position(vpane.get_allocation().height - 188)
 		
 		transfer_frame = self.glade_xml.get_widget('transfer_frame')
 		transfer_frame.show()
@@ -426,7 +425,9 @@ class GuppyWindow:
 				return
 
 		queue_box = self.glade_xml.get_widget('queue_vbox')
-		self.show_transfer_frame()
+		
+		# Show File Transfer pane
+		self.show_file_transfer_action.set_active(True)
 
 		existing_files = []
 		for path in files:
