@@ -56,7 +56,7 @@ if os.path.exists(os.path.join(basedir, 'lib')):
 		raise SystemExit("ERROR: Could not find required directory: %s" %
 	                    pythondir)
 
-	datadir = os.path.join(basedir, 'share', 'guppy')
+	datadir = os.path.join(basedir, 'share', dirname)
 	if not os.path.exists(datadir):
 		raise SystemExit("ERROR: Could not find required directory: %s" %
 	                    datadir)
@@ -65,6 +65,7 @@ elif not os.path.exists(os.path.join(basedir, dirname)):
 	                 os.path.join(basedir, dirname))
 else:
 	pythondir = basedir
+	datadir = os.path.join(basedir, dirname)
 	
 sys.path.insert(0, pythondir)
 
@@ -73,13 +74,11 @@ import gettext
 
 from guppy import GuppyWindow
 
-APP_NAME = 'guppy'
-
 if __name__ == "__main__":
 	locale.setlocale(locale.LC_ALL, '')
-	gettext.bindtextdomain(APP_NAME, 'i18n')
-	gettext.textdomain(APP_NAME)
-	gettext.install(APP_NAME, 'i18n', unicode=1)
+	gettext.bindtextdomain(dirname, 'i18n')
+	gettext.textdomain(dirname)
+	gettext.install(dirname, 'i18n', unicode=1)
 	
 	guppy = GuppyWindow.GuppyWindow(datadir + '/')
 	guppy.run()
