@@ -1,0 +1,6 @@
+include AUTHORS COPYING MANIFEST.in NEWS README
+include setup.py
+recursive-include doc *.dia *.png *.txt
+recursive-include guppy *.py *.glade *.xml
+recursive-include po *.po
+recursive-include testing *.py *.txt puppy
