@@ -9,7 +9,7 @@ import os
 import sys
 import shutil
 
-from guppy import GuppyWindow
+from guppy import about
 
 def listfiles(*dirs):
 	dir, pattern = os.path.split(os.path.join(*dirs))
@@ -84,14 +84,15 @@ data_files = [
 scripts = ['guppy/guppy']
 
 setup(name='guppy',
-	version=GuppyWindow.VERSION,
-	description='Topfield PVR File Downloader',
-	author='Tony Tsui',
-	author_email='tsui.tony@gmail.com',
-	url='http://guppy.nongnu.org',
-	license='GPL',
+	version=about.VERSION,
+	description=about.DESCRIPTION,
+	author=about.AUTHOR,
+	author_email=about.AUTHOR_EMAIL,
+	url=about.WEBSITE,
+	license=about.LICENSE,
 	packages=['guppy'],
 	scripts=scripts,
-	data_files=data_files,
-	cmdclass={'install_data': InstallData, 'install_lib': InstallLib})
+	data_files=data_files)
+	# FIXME: Disable po and __installed__.py files for now. 
+	#cmdclass={'install_data': InstallData, 'install_lib': InstallLib})
 

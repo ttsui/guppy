@@ -33,14 +33,7 @@ import gettext
 import puppy
 from FileSystemModel import *
 from util import *
-
-APP_NAME = 'Guppy'
-VERSION = '0.0.3'
-AUTHORS = ['Tony Tsui tsui.tony@gmail.com']
-WEBSITE = 'http://guppy.nongnu.org'
-COPYRIGHT = 'Copyright (C) 2005 Tony Tsui'
-LICENSE = 'GNU Public License'
-
+from about import *
 			
 class GuppyWindow:
 	SCREEN_INFO_UPDATE_INTERVAL = 10 * 60 * 1000 # 10 mins (unit in milliseconds)
@@ -238,7 +231,7 @@ class GuppyWindow:
 	def on_about(self, widget, data=None):	
 		dialog = gtk.AboutDialog()
 		dialog.set_name(APP_NAME)
-		dialog.set_authors(AUTHORS)
+		dialog.set_authors([AUTHOR + ' ' + AUTHOR_EMAIL] + CONTRIBUTORS)
 		dialog.set_copyright(COPYRIGHT)
 		dialog.set_version(VERSION)
 		dialog.set_license(LICENSE)
