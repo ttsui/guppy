@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-
-## guppy.py - Main program
+## GuppyWindow.py - Main Window
 ## Copyright (C) 2005 Tony Tsui <tsui.tony@gmail.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
