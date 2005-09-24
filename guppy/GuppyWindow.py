@@ -109,7 +109,7 @@ class GuppyWindow:
 		# FIXME: Use a proper icon for Turbo button
 		actiongroup.add_toggle_actions([('Turbo', gtk.STOCK_EXECUTE, _('Tur_bo'), '<Ctrl>t', _('Turbo Transfer'), self.on_turbo_toggled),
 		                                ('ShowHidden', None, _('Show Hidden Files'), None, _('Show hidden files'), self.on_show_hidden_toggled),
-		                                ('ShowFileTransfer', None, _('Show File Transfer'), '<Ctrl>v', _('Show File Transfer'), self.on_show_file_transfer_toggled)])
+		                                ('ShowFileTransfer', None, _('Show File Transfer'), None, _('Show File Transfer'), self.on_show_file_transfer_toggled)])
 
 		# Create reference to ShowFileTransfer action so we can update the
 		# toggle state accordingly when the transfer frame close button is
