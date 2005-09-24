@@ -230,8 +230,23 @@ class Puppy:
 		return status
 		
 	def setTurbo(self, value):
-		self.turbo = value
-	
+		args = '-c turbo'
+			
+		if value == True:
+			args += ' 1'
+		else:
+			args += ' 0'
+			
+		output_file = self._execute(args)
+
+		output = output_file.readlines()
+		output_file.close()
+		
+		if self.getStatus() != 0:
+			raise PuppyError("setTrubo failed. puppy returned: " + str(output))
+		
+		return
+			
 	def reset(self):	
 		args = '-c cancel'
 			
@@ -259,10 +274,7 @@ class Puppy:
 		return result
 		
 	def _execute(self, args):
-		cmd = self.cmd
-		if self.turbo == True:
-			cmd += ' -t'
-		cmd += ' ' + args
+		cmd = self.cmd + ' ' + args
 		
 		if DEBUG:
 			print 'cmd = ', cmd
