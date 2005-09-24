@@ -46,14 +46,14 @@ class GuppyWindow:
 		self.datadir = datadir
 
 		# Find out proper way to find glade files
-		guppy_glade_file = self.datadir + '/' + 'guppy.glade'
+		self.glade_file = self.datadir + '/' + 'guppy.glade'
 
 		self.initUIManager()		
 
 		gtk.glade.set_custom_handler(self.customWidgetHandler)
 
 		# Load glade file
-		self.glade_xml = gtk.glade.XML(guppy_glade_file, None, gettext.textdomain())
+		self.glade_xml = gtk.glade.XML(self.glade_file, None, gettext.textdomain())
 		
 		# Connect callback functions in glade file to functions
 		self.glade_xml.signal_autoconnect(self)		
@@ -99,17 +99,17 @@ class GuppyWindow:
 				
 		actiongroup = gtk.ActionGroup('Actions')
 		
-		actiongroup.add_actions([('Quit', gtk.STOCK_QUIT, '_Quit', None, None, self.on_quit),
-		                         ('File', None, '_File'),
-		                         ('View', None, '_View'),
-		                         ('Transfer', None, '_Transfer'),
-		                         ('Help', None, '_Help'),
-                                 ('About', gtk.STOCK_ABOUT , '_About', None, None, self.on_about)])
+		actiongroup.add_actions([('Quit', gtk.STOCK_QUIT, _('_Quit'), '<Ctrl>q', None, self.on_quit),
+		                         ('File', None, _('_File')),
+		                         ('View', None, _('_View')),
+		                         ('Transfer', None, _('_Transfer')),
+		                         ('Help', None, _('_Help')),
+                                 ('About', gtk.STOCK_ABOUT , _('_About'), None, None, self.on_about)])
 
 		# FIXME: Use a proper icon for Turbo button
-		actiongroup.add_toggle_actions([('Turbo', gtk.STOCK_EXECUTE, 'Tur_bo', None, 'Turbo Transfer', self.on_turbo_toggled),
-		                                ('ShowHidden', None, 'Show Hidden Files', None, 'Show hidden files', self.on_show_hidden_toggled),
-		                                ('ShowFileTransfer', None, 'Show File Transfer', None, 'Show File Transfer', self.on_show_file_transfer_toggled)])
+		actiongroup.add_toggle_actions([('Turbo', gtk.STOCK_EXECUTE, _('Tur_bo'), '<Ctrl>t', _('Turbo Transfer'), self.on_turbo_toggled),
+		                                ('ShowHidden', None, _('Show Hidden Files'), None, _('Show hidden files'), self.on_show_hidden_toggled),
+		                                ('ShowFileTransfer', None, _('Show File Transfer'), None, _('Show File Transfer'), self.on_show_file_transfer_toggled)])
 
 		# Create reference to ShowFileTransfer action so we can update the
 		# toggle state accordingly when the transfer frame close button is
@@ -121,14 +121,14 @@ class GuppyWindow:
 		# Create separate action group for upload so sensitivity can be set
 		# according to selection in PC file tree
 		self.upload_actiongrp = gtk.ActionGroup('UploadAction')                                 
-		self.upload_actiongrp.add_actions([('Upload', gtk.STOCK_GO_BACK, '_Upload', None, 'Upload File', self.on_upload_btn_clicked)])
+		self.upload_actiongrp.add_actions([('Upload', gtk.STOCK_GO_BACK, _('_Upload'), '<Ctrl>u', _('Upload File'), self.on_upload_btn_clicked)])
 		self.upload_actiongrp.set_sensitive(False)
 		self.uimanager.insert_action_group(self.upload_actiongrp, 1)
 
 		# Create separate action group for download so sensitivity can be set
 		# according to selection in PVR file tree
 		self.download_actiongrp = gtk.ActionGroup('DownloadAction')                                 
-		self.download_actiongrp.add_actions([('Download', gtk.STOCK_GO_FORWARD, '_Download', None, 'Download File', self.on_download_btn_clicked)])
+		self.download_actiongrp.add_actions([('Download', gtk.STOCK_GO_FORWARD, _('_Download'), '<Ctrl>d', _('Download File'), self.on_download_btn_clicked)])
 		self.download_actiongrp.set_sensitive(False)
 		self.uimanager.insert_action_group(self.download_actiongrp, 2)
 		
@@ -443,7 +443,7 @@ class GuppyWindow:
 				dst_file = dst_dir + '\\' + file
 				file_exists = self.pvr_model.find(file)
 
-			xml = gtk.glade.XML('guppy.glade', 'progress_box')
+			xml = gtk.glade.XML(self.glade_file, 'progress_box')
 			xml.signal_autoconnect(self)		
 
 			progress_box = xml.get_widget('progress_box')
