@@ -77,6 +77,12 @@ class GuppyWindow:
 		
 		self.updateFreeSpace()
 		
+		self.pvr_path_bar = PathBar(self, 'pvr')
+		self.pc_path_bar = PathBar(self, 'pc')
+		
+		self.updatePathBar(self.pvr_model)
+		self.updatePathBar(self.pc_model)
+		
 		# Timer to update screen info
 		gobject.timeout_add(GuppyWindow.SCREEN_INFO_UPDATE_INTERVAL, self.update_screen_info)
 		
@@ -259,10 +265,14 @@ class GuppyWindow:
 		return True
 		
 	def on_path_entry_activate(self, widget, fs_model):
-		fs_model.changeDir(widget.get_text())
+		path = widget.get_text()
+		fs_model.changeDir(path)
 		
 		if fs_model == self.pc_model:
+			self.pc_path_bar.changeDir(path)
 			self.updateFreeSpace(self.pc_model)
+		else:
+			self.pvr_path_bar.changeDir(path)
 		
 	def on_quit(self, widget, data=None):
 		# Empty out transfer queue so the TransferThread can't get another
@@ -297,19 +307,6 @@ class GuppyWindow:
 		self.pc_liststore.get_model().refilter()
 		self.pvr_liststore.get_model().refilter()
 
-	def on_transfer_clear_btn_clicked(self, widget, data=None):
-		# Loop until we get a Queue.Empty exception
-		while True:
-			try:
-				file_transfer = self.transfer_complete_queue.get_nowait()
-			except Queue.Empty:
-				break
-
-			progress_box = file_transfer.xml.get_widget('progress_box')
-			# progress_box may be None if the Remove button was clicked on it
-			if progress_box:
-				progress_box.destroy()
-	
 	def on_treeview_changed(self, widget, fs_model):
 		model, files = widget.get_selected_rows()
 		
@@ -351,14 +348,29 @@ class GuppyWindow:
 			fs_model.changeDir(name)
 			path = fs_model.getCWD()
 			if fs_model == self.pc_model:
+				self.pc_path_bar.changeDir(path)
 				self.pc_path_entry.set_text(path)
 				self.updateFreeSpace(self.pc_model)
 			else:
+				self.pvr_path_bar.changeDir(path)
 				self.pvr_path_entry.set_text(path)
 			
 	def on_turbo_toggled(self, widget, data=None):
 		self.puppy.setTurbo(widget.get_active())
-		
+
+	def on_transfer_clear_btn_clicked(self, widget, data=None):
+		# Loop until we get a Queue.Empty exception
+		while True:
+			try:
+				file_transfer = self.transfer_complete_queue.get_nowait()
+			except Queue.Empty:
+				break
+
+			progress_box = file_transfer.xml.get_widget('progress_box')
+			# progress_box may be None if the Remove button was clicked on it
+			if progress_box:
+				progress_box.destroy()
+			
 	def on_transfer_close_btn_clicked(self, widget, data=None):
 		self.show_file_transfer_action.set_active(False)
 
@@ -509,6 +521,17 @@ class GuppyWindow:
 		if fs_model == self.pc_model or fs_model == None:
 			self.pc_free_space_label.set_text(_('Free Space') + ': ' + self.pc_model.freeSpace())
 
+	def updatePathBar(self, fs_model):
+		'''Update the buttons of the path bar for each file system.
+
+		fs_model  Model to update path bar. Default is None which updates both
+		          file system.
+		'''
+		if fs_model == self.pvr_model:
+			self.pvr_path_bar.changeDir(fs_model.getCWD())
+		else:
+			self.pc_path_bar.changeDir(fs_model.getCWD())
+	
 	def update_screen_info(self):
 		# Update amount of free space available
 		self.updateFreeSpace()
@@ -696,6 +719,110 @@ class TransferThread(threading.Thread):
 			# Put on queue for completed transfers
 			self.complete_queue.put(file_transfer)
 
+class PathBar:
+	def __init__(self, guppy, fs):
+		self.guppy = guppy
+		self.fs = fs
+		self.btn_list = []
+		self.path = None
+		self.path_bar = self.guppy.glade_xml.get_widget(self.fs + '_path_bar')
+		
+	def changeDir(self, path):
+		path = path.replace('\\', '/')
+		path = os.path.normpath(path)
+		
+		print 'UpdatePathBar(): path=', path
+
+		# Check if we are changing to a dir on the same path
+		if self.updatePathBtns(path):
+			return
+		
+		self.path = path
+
+		# Remove existing buttons
+		for btn in self.path_bar.get_children():
+			self.path_bar.remove(btn)		
+
+		# Add root dir button
+		# FIXME: Use icon for root dir
+		label = gtk.Label('/')
+		btn = gtk.ToggleButton()
+		btn.add(label)
+		self.path_bar.add(btn)
+		btn_handler_id = btn.connect('clicked', self.on_path_btn_clicked, '/')
+		btn.set_data('handler_id', btn_handler_id)
+		btn.set_data('label', label)
+		
+		dirs = path.split('/')
+
+		print 'updatePathBar(): dirs = ', dirs
+		path = ''
+		for dir in dirs:
+			if len(dir) > 0:
+				path += '/' + dir
+				label = gtk.Label(dir)
+				btn = gtk.ToggleButton()
+				btn.add(label)
+				self.path_bar.add(btn)
+				btn_handler_id = btn.connect('clicked', self.on_path_btn_clicked, path)
+				btn.set_data('handler_id', btn_handler_id)
+				btn.set_data('label', label)
+			
+		# Activate last button
+		btn.handler_block(btn_handler_id)
+		btn.set_active(True)
+		label = btn.get_data('label')
+		label.set_markup('<b>' + label.get_text() + '</b>')
+		btn.handler_unblock(btn_handler_id)
+		self.active_btn = btn
+
+		self.path_bar.show_all()		
+
+	def on_path_btn_clicked(self, widget, path):
+		print 'on_path_btn_clicked(): path=', path
+		self.updatePathBtns(path)
+		if self.fs == 'pvr':
+			path = path.replace('/', '\\')
+			self.guppy.pvr_model.changeDir(path)
+			self.guppy.pvr_path_entry.set_text(path)
+		else:
+			self.guppy.pc_model.changeDir(path)
+			self.guppy.pc_path_entry.set_text(path)
+	
+	def updatePathBtns(self, path):
+		"""Update toggle state of path bar buttons if we change to a dir on the current path.
+		"""
+		if self.path == None or not self.path.startswith(path):
+			return False
+
+		if path != '/':
+			last_dir = path.split('/')[-1]
+		else:
+			last_dir = '/'
+
+		for btn in self.path_bar.get_children():
+			label = btn.get_data('label')
+			if label.get_text() == last_dir:
+				# Block clicked signal and untoggle old active btn
+				handler_id = self.active_btn.get_data('handler_id')
+				self.active_btn.handler_block(handler_id)
+				self.active_btn.set_active(False)
+				label = self.active_btn.get_data('label')
+				label.set_text(label.get_text())
+				self.active_btn.handler_unblock(handler_id)
+				
+				handler_id = btn.get_data('handler_id')
+				btn.handler_block(handler_id)
+				btn.set_active(True)
+				label = btn.get_data('label')
+				label.set_markup('<b>' + label.get_text() + '</b>')
+				btn.handler_unblock(handler_id)
+
+				self.active_btn = btn
+				return True
+				
+		return False
+					
 if __name__ == "__main__":
 	locale.setlocale(locale.LC_ALL, '')
 	gettext.bindtextdomain(APP_NAME, 'i18n')
