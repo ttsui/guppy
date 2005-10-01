@@ -80,6 +80,12 @@ class GuppyWindow:
 		self.pvr_path_bar = PathBar(self, 'pvr')
 		self.pc_path_bar = PathBar(self, 'pc')
 		
+		pvr_vbox = self.glade_xml.get_widget('pvr_vbox')
+		pvr_vbox.pack_start(self.pvr_path_bar, expand=False, fill=False)
+		
+		pc_vbox = self.glade_xml.get_widget('pc_vbox')
+		pc_vbox.pack_start(self.pc_path_bar, expand=False, fill=False)
+
 		self.updatePathBar(self.pvr_model)
 		self.updatePathBar(self.pc_model)
 		
@@ -269,10 +275,10 @@ class GuppyWindow:
 		fs_model.changeDir(path)
 		
 		if fs_model == self.pc_model:
-			self.pc_path_bar.changeDir(path)
+			self.pc_path_bar.setPath(path)
 			self.updateFreeSpace(self.pc_model)
 		else:
-			self.pvr_path_bar.changeDir(path)
+			self.pvr_path_bar.setPath(path)
 		
 	def on_quit(self, widget, data=None):
 		# Empty out transfer queue so the TransferThread can't get another
@@ -348,11 +354,11 @@ class GuppyWindow:
 			fs_model.changeDir(name)
 			path = fs_model.getCWD()
 			if fs_model == self.pc_model:
-				self.pc_path_bar.changeDir(path)
+				self.pc_path_bar.setPath(path)
 				self.pc_path_entry.set_text(path)
 				self.updateFreeSpace(self.pc_model)
 			else:
-				self.pvr_path_bar.changeDir(path)
+				self.pvr_path_bar.setPath(path)
 				self.pvr_path_entry.set_text(path)
 			
 	def on_turbo_toggled(self, widget, data=None):
@@ -528,9 +534,9 @@ class GuppyWindow:
 		          file system.
 		'''
 		if fs_model == self.pvr_model:
-			self.pvr_path_bar.changeDir(fs_model.getCWD())
+			self.pvr_path_bar.setPath(fs_model.getCWD())
 		else:
-			self.pc_path_bar.changeDir(fs_model.getCWD())
+			self.pc_path_bar.setPath(fs_model.getCWD())
 	
 	def update_screen_info(self):
 		# Update amount of free space available
@@ -719,65 +725,37 @@ class TransferThread(threading.Thread):
 			# Put on queue for completed transfers
 			self.complete_queue.put(file_transfer)
 
-class PathBar:
+class PathBar(gtk.HBox):
 	def __init__(self, guppy, fs):
+		gtk.HBox.__init__(self)
+		self.set_spacing(3)
+		
 		self.guppy = guppy
 		self.fs = fs
 		self.btn_list = []
 		self.path = None
-		self.path_bar = self.guppy.glade_xml.get_widget(self.fs + '_path_bar')
+		self.active_btn = None
 		
-	def changeDir(self, path):
-		path = path.replace('\\', '/')
-		path = os.path.normpath(path)
+		# TODO: Use icon for button
+		self.down_btn = gtk.Button('<')
+		self.up_btn = gtk.Button('>')
 		
-		print 'UpdatePathBar(): path=', path
-
-		# Check if we are changing to a dir on the same path
-		if self.updatePathBtns(path):
-			return
-		
-		self.path = path
-
-		# Remove existing buttons
-		for btn in self.path_bar.get_children():
-			self.path_bar.remove(btn)		
+		self.pack_start(self.down_btn, expand=False)
+		self.pack_end(self.up_btn, expand=False)
 
 		# Add root dir button
 		# FIXME: Use icon for root dir
 		label = gtk.Label('/')
-		btn = gtk.ToggleButton()
-		btn.add(label)
-		self.path_bar.add(btn)
-		btn_handler_id = btn.connect('clicked', self.on_path_btn_clicked, '/')
-		btn.set_data('handler_id', btn_handler_id)
-		btn.set_data('label', label)
+		self.root_btn = gtk.ToggleButton()
+		self.root_btn.add(label)
+		self.root_btn.set_data('label', label)
+				
+		btn_handler_id = self.root_btn.connect('clicked', self.on_path_btn_clicked, '/')
+		self.root_btn.set_data('handler_id', btn_handler_id)
 		
-		dirs = path.split('/')
-
-		print 'updatePathBar(): dirs = ', dirs
-		path = ''
-		for dir in dirs:
-			if len(dir) > 0:
-				path += '/' + dir
-				label = gtk.Label(dir)
-				btn = gtk.ToggleButton()
-				btn.add(label)
-				self.path_bar.add(btn)
-				btn_handler_id = btn.connect('clicked', self.on_path_btn_clicked, path)
-				btn.set_data('handler_id', btn_handler_id)
-				btn.set_data('label', label)
-			
-		# Activate last button
-		btn.handler_block(btn_handler_id)
-		btn.set_active(True)
-		label = btn.get_data('label')
-		label.set_markup('<b>' + label.get_text() + '</b>')
-		btn.handler_unblock(btn_handler_id)
-		self.active_btn = btn
-
-		self.path_bar.show_all()		
-
+		self.pack_start(self.root_btn, expand=False)
+		self.btn_list.append(self.root_btn)
+		
 	def on_path_btn_clicked(self, widget, path):
 		print 'on_path_btn_clicked(): path=', path
 		self.updatePathBtns(path)
@@ -788,6 +766,68 @@ class PathBar:
 		else:
 			self.guppy.pc_model.changeDir(path)
 			self.guppy.pc_path_entry.set_text(path)
+
+	def setPath(self, path):
+		path = path.replace('\\', '/')
+		path = os.path.normpath(path)
+		
+		print 'setPath(): path=', path
+
+		# Check if we are changing to a dir on the same path
+		if self.updatePathBtns(path):
+			return
+		
+		self.path = path
+
+		# Remove existing buttons
+		for btn in self.btn_list[1:]:
+			self.remove(btn)		
+			self.btn_list.remove(btn)
+		
+		# Reset root button
+		if self.active_btn == self.root_btn:
+			handler_id = self.active_btn.get_data('handler_id')
+			self.active_btn.handler_block(handler_id)
+			self.active_btn.set_active(False)
+	
+			label = self.active_btn.get_data('label')
+			label.set_text(label.get_text())
+			self.active_btn.handler_unblock(handler_id)
+						
+		dirs = path.split('/')
+
+		print 'setPath(): dirs = ', dirs
+		path = ''
+		btn = None
+		for dir in dirs:
+			if len(dir) > 0:
+				path += '/' + dir
+				
+				label = gtk.Label(dir)
+				btn = gtk.ToggleButton()
+				btn.add(label)
+				btn.set_data('label', label)
+				
+				self.pack_start(btn, expand=False)
+				self.btn_list.append(btn)
+				
+				btn_handler_id = btn.connect('clicked', self.on_path_btn_clicked, path)
+				btn.set_data('handler_id', btn_handler_id)
+				
+			
+		if btn == None:
+			btn = self.root_btn
+			btn_handler_id = self.root_btn.get_data('handler_id')
+			
+		# Activate last button
+		btn.handler_block(btn_handler_id)
+		btn.set_active(True)
+		label = btn.get_data('label')
+		label.set_markup('<b>' + label.get_text() + '</b>')
+		btn.handler_unblock(btn_handler_id)
+		self.active_btn = btn
+
+		self.show_all()		
 	
 	def updatePathBtns(self, path):
 		"""Update toggle state of path bar buttons if we change to a dir on the current path.
@@ -800,21 +840,25 @@ class PathBar:
 		else:
 			last_dir = '/'
 
-		for btn in self.path_bar.get_children():
+		for btn in self.btn_list:
 			label = btn.get_data('label')
 			if label.get_text() == last_dir:
 				# Block clicked signal and untoggle old active btn
 				handler_id = self.active_btn.get_data('handler_id')
 				self.active_btn.handler_block(handler_id)
 				self.active_btn.set_active(False)
+
 				label = self.active_btn.get_data('label')
+				print 'updatePathBtns() old btn label = ', label.get_text()
 				label.set_text(label.get_text())
 				self.active_btn.handler_unblock(handler_id)
 				
 				handler_id = btn.get_data('handler_id')
 				btn.handler_block(handler_id)
 				btn.set_active(True)
+
 				label = btn.get_data('label')
+				print 'updatePathBtns() old new label = ', label.get_text()
 				label.set_markup('<b>' + label.get_text() + '</b>')
 				btn.handler_unblock(handler_id)
 

@@ -60,16 +60,7 @@
 		  <property name="spacing">0</property>
 
 		  <child>
-		    <widget class="GtkHButtonBox" id="pvr_path_bar">
-		      <property name="visible">True</property>
-		      <property name="layout_style">GTK_BUTTONBOX_START</property>
-		      <property name="spacing">0</property>
-		    </widget>
-		    <packing>
-		      <property name="padding">0</property>
-		      <property name="expand">False</property>
-		      <property name="fill">True</property>
-		    </packing>
+		    <placeholder/>
 		  </child>
 
 		  <child>
@@ -126,6 +117,7 @@
 		      <property name="padding">0</property>
 		      <property name="expand">False</property>
 		      <property name="fill">False</property>
+		      <property name="pack_type">GTK_PACK_END</property>
 		    </packing>
 		  </child>
 
@@ -156,6 +148,7 @@
 		      <property name="padding">0</property>
 		      <property name="expand">True</property>
 		      <property name="fill">True</property>
+		      <property name="pack_type">GTK_PACK_END</property>
 		    </packing>
 		  </child>
 		</widget>
@@ -202,16 +195,7 @@
 		  <property name="spacing">0</property>
 
 		  <child>
-		    <widget class="GtkHButtonBox" id="pc_path_bar">
-		      <property name="visible">True</property>
-		      <property name="layout_style">GTK_BUTTONBOX_START</property>
-		      <property name="spacing">0</property>
-		    </widget>
-		    <packing>
-		      <property name="padding">0</property>
-		      <property name="expand">False</property>
-		      <property name="fill">True</property>
-		    </packing>
+		    <placeholder/>
 		  </child>
 
 		  <child>
@@ -268,6 +252,7 @@
 		      <property name="padding">0</property>
 		      <property name="expand">False</property>
 		      <property name="fill">False</property>
+		      <property name="pack_type">GTK_PACK_END</property>
 		    </packing>
 		  </child>
 
@@ -298,6 +283,7 @@
 		      <property name="padding">0</property>
 		      <property name="expand">True</property>
 		      <property name="fill">True</property>
+		      <property name="pack_type">GTK_PACK_END</property>
 		    </packing>
 		  </child>
 		</widget>
