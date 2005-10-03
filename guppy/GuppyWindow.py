@@ -32,7 +32,7 @@ import puppy
 from FileSystemModel import *
 from util import *
 from about import *
-			
+
 class GuppyWindow:
 	SCREEN_INFO_UPDATE_INTERVAL = 10 * 60 * 1000 # 10 mins (unit in milliseconds)
 	
@@ -82,9 +82,11 @@ class GuppyWindow:
 		
 		pvr_vbox = self.glade_xml.get_widget('pvr_vbox')
 		pvr_vbox.pack_start(self.pvr_path_bar, expand=False, fill=False)
-		
+		self.pvr_path_bar.show_all()		
+
 		pc_vbox = self.glade_xml.get_widget('pc_vbox')
 		pc_vbox.pack_start(self.pc_path_bar, expand=False, fill=False)
+		self.pc_path_bar.show_all()
 
 		self.updatePathBar(self.pvr_model)
 		self.updatePathBar(self.pc_model)
@@ -105,7 +107,6 @@ class GuppyWindow:
 		self.transfer_thread.setDaemon(True)
 		self.transfer_thread.start()
 	
-		
 	def initUIManager(self):
 		self.uimanager = gtk.UIManager()
 				
@@ -725,10 +726,14 @@ class TransferThread(threading.Thread):
 			# Put on queue for completed transfers
 			self.complete_queue.put(file_transfer)
 
-class PathBar(gtk.HBox):
+class PathBar(gtk.Container):
+	__gtype_name__ = 'PathBar'
+	
 	def __init__(self, guppy, fs):
-		gtk.HBox.__init__(self)
-		self.set_spacing(3)
+		gtk.Container.__init__(self)
+#		self.set_spacing(3)
+
+		self.set_flags(gtk.NO_WINDOW)		
 		
 		self.guppy = guppy
 		self.fs = fs
@@ -736,13 +741,15 @@ class PathBar(gtk.HBox):
 		self.path = None
 		self.active_btn = None
 		
+		gtk.widget_push_composite_child()
 		# TODO: Use icon for button
-		self.down_btn = gtk.Button('<')
-		self.up_btn = gtk.Button('>')
-		
-		self.pack_start(self.down_btn, expand=False)
-		self.pack_end(self.up_btn, expand=False)
+		self.down_btn = gobject.new(gtk.Button, visible=True, label='<')
+		self.up_btn = gobject.new(gtk.Button, visible=True, label='>')
+		gtk.widget_pop_composite_child()
 
+		self.down_btn.set_parent(self)
+		self.up_btn.set_parent(self)
+		
 		# Add root dir button
 		# FIXME: Use icon for root dir
 		label = gtk.Label('/')
@@ -753,12 +760,59 @@ class PathBar(gtk.HBox):
 		btn_handler_id = self.root_btn.connect('clicked', self.on_path_btn_clicked, '/')
 		self.root_btn.set_data('handler_id', btn_handler_id)
 		
-		self.pack_start(self.root_btn, expand=False)
+		self.add(self.root_btn)
 		self.btn_list.append(self.root_btn)
+
+	def do_add(self, widget):
+		widget.set_parent(self)
+	
+	def do_forall(self, internal, callback, data):
+		if internal:
+			callback(self.down_btn, data)
+			callback(self.up_btn, data)
+		for btn in self.btn_list:
+			callback(btn, data)
+	
+	def do_remove(self, widget):
+		was_visible = widget.get_property('visible')
+		widget.unparent()
+		if was_visible:
+			self.queue_resize()
+		
+	def do_size_request(self, requisition):
+#		print 'do_size_request()'
+		req_width = 0
+		req_height = 0
+		widgets = [ self.down_btn, self.up_btn ] + self.btn_list
+
+		for widget in widgets:
+			widget_req = gtk.gdk.Rectangle(0, 0, *widget.size_request())
+			req_width += widget_req.width
+			req_height = max(req_height, widget_req.height)
+
+		requisition.width = req_width
+		requisition.height = req_height
+		
+		
+	def do_size_allocate(self, allocation):
+#		print 'do_size_allocate(): allocation.width = %d allocation.height = %d' % (allocation.width, allocation.height)
+
+		widgets = [ self.down_btn ] + self.btn_list + [ self.up_btn ]
+		
+		cur_x = allocation.x
+		for widget in widgets:
+			width, height = widget.get_child_requisition()
+
+			rect  = gtk.gdk.Rectangle(x=cur_x, y=allocation.y, width=width, height=height)
+			cur_x += width
+
+			widget.size_allocate(rect)
 		
 	def on_path_btn_clicked(self, widget, path):
 		print 'on_path_btn_clicked(): path=', path
+
 		self.updatePathBtns(path)
+
 		if self.fs == 'pvr':
 			path = path.replace('/', '\\')
 			self.guppy.pvr_model.changeDir(path)
@@ -779,10 +833,16 @@ class PathBar(gtk.HBox):
 		
 		self.path = path
 
+		bar_bound = self.get_allocation()
+		cur_width = 0
+		
 		# Remove existing buttons
 		for btn in self.btn_list[1:]:
-			self.remove(btn)		
+			self.remove(btn)
 			self.btn_list.remove(btn)
+			btn.destroy()
+		
+		print 'setPath(): down_btn.width = ', self.down_btn.get_allocation().width		
 		
 		# Reset root button
 		if self.active_btn == self.root_btn:
@@ -808,7 +868,7 @@ class PathBar(gtk.HBox):
 				btn.add(label)
 				btn.set_data('label', label)
 				
-				self.pack_start(btn, expand=False)
+				self.add(btn)
 				self.btn_list.append(btn)
 				
 				btn_handler_id = btn.connect('clicked', self.on_path_btn_clicked, path)
@@ -866,7 +926,10 @@ class PathBar(gtk.HBox):
 				return True
 				
 		return False
-					
+
+# Need to register PathBar widget in order to override gtk.HBox methods
+gobject.type_register(PathBar)
+
 if __name__ == "__main__":
 	locale.setlocale(locale.LC_ALL, '')
 	gettext.bindtextdomain(APP_NAME, 'i18n')
