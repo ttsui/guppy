@@ -243,7 +243,7 @@ class Puppy:
 		output_file.close()
 		
 		if self.getStatus() != 0:
-			raise PuppyError("setTrubo failed. puppy returned: " + str(output))
+			raise PuppyError("setTurbo failed. puppy returned: " + str(output))
 		
 		return
 			

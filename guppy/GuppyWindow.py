@@ -93,6 +93,7 @@ class GuppyWindow:
 		self.transfer_thread.setDaemon(True)
 		self.transfer_thread.start()
 	
+		self.turbo = False
 		
 	def initUIManager(self):
 		self.uimanager = gtk.UIManager()
@@ -357,7 +358,7 @@ class GuppyWindow:
 				self.pvr_path_entry.set_text(path)
 			
 	def on_turbo_toggled(self, widget, data=None):
-		self.puppy.setTurbo(widget.get_active())
+		self.turbo = widget.get_active()
 		
 	def on_transfer_close_btn_clicked(self, widget, data=None):
 		self.show_file_transfer_action.set_active(False)
@@ -386,7 +387,7 @@ class GuppyWindow:
 		
 		transfer_frame = self.glade_xml.get_widget('transfer_frame')
 		transfer_frame.show()
-		
+
 	def transferFile(self, direction):
 		if direction == 'download':
 			model, files = self.pvr_treeview.get_selection().get_selected_rows()
@@ -614,6 +615,10 @@ class TransferThread(threading.Thread):
 
 			progress_bar = xml.get_widget('transfer_progressbar')
 			
+			# Enable turbo mode if required
+			if self.guppy.turbo == True:
+				self.guppy.puppy.setTurbo(True)
+				
 			if direction == 'download':
 				self.guppy.puppy.getFile(src_file, dst_file)
 			else:
@@ -658,6 +663,11 @@ class TransferThread(threading.Thread):
 				while gtk.events_pending():
 					gtk.main_iteration()
 				gtk.gdk.threads_leave()
+
+			# Disable turbo mode. The PVR remote control can not be used if
+			# turbo mode is left on.
+			if self.guppy.turbo == True:
+				self.guppy.puppy.setTurbo(False)
 			
 			gtk.gdk.threads_enter()
 			if transfer_successful:
