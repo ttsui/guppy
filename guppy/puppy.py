@@ -186,11 +186,16 @@ class Puppy:
 
 	def getProgress(self):
 		exit_status = self.getStatus(wait=False)
+		# exit_status of -1 means process is still alive
 		if exit_status != -1:
 			# Raise exception if puppy did not exit successfully or because of
 			# SIGTERM.
 			if exit_status != 0 and exit_status != 15:
 				raise PuppyError("Transfer failed")
+
+			# Reap child process
+			if exit_status == 0:
+				self.getStatus()
 			
 		# Move to first non \r character
 		char = self.progress_output.read(1)
@@ -206,6 +211,8 @@ class Puppy:
 		tokens = line.split(',')
 		
 		if len(tokens) != 4:
+			# Reap child process
+			self.getStatus()
 			return None, None, None
 
 		percent = tokens[0][:tokens[0].rindex('%')]
