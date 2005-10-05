@@ -175,7 +175,11 @@ class PCFileSystemModel(FileSystemModel):
 		self.append(['d', gtk.STOCK_DIRECTORY, '..', '', ''])
 		
 		for file in os.listdir(self.current_dir):
-			mode = os.stat(self.current_dir + '/' + file)
+			try:
+				mode = os.stat(self.current_dir + '/' + file)
+			except OSError, (errno, strerror):
+				print 'PCFileSystemModel::changeDir(): OSError(%s): %s\n' % (errno, strerror)
+				continue
 
 			if stat.S_ISDIR(mode[stat.ST_MODE]):
 				type = 'd'
