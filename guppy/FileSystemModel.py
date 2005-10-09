@@ -175,7 +175,11 @@ class PCFileSystemModel(FileSystemModel):
 		self.append(['d', gtk.STOCK_DIRECTORY, '..', '', ''])
 		
 		for file in os.listdir(self.current_dir):
-			mode = os.stat(self.current_dir + '/' + file)
+			try:
+				mode = os.stat(self.current_dir + '/' + file)
+			except OSError, (errno, strerror):
+				print 'PCFileSystemModel::changeDir(): OSError(%s): %s\n' % (errno, strerror)
+				continue
 
 			if stat.S_ISDIR(mode[stat.ST_MODE]):
 				type = 'd'
@@ -191,7 +195,7 @@ class PCFileSystemModel(FileSystemModel):
 			self.append(entry)
 
 	def freeSpace(self):
-		cmd = 'df ' + self.current_dir
+		cmd = 'df ' + '"' + self.current_dir + '"'
 		pipe = os.popen(cmd)
 
 		# Skip Headers
@@ -340,10 +344,19 @@ class PVRFileSystemModel(FileSystemModel):
 			
 		self.dir_tree_lock.acquire()
 
-		try:
-			new_dir_tree = self.scanDirectory('')
-		except puppy.PuppyBusyError:
-			# Don't update directory tree if puppy busy
+		new_dir_tree = None
+
+		# Attempt to update cache twice in case puppy was busy the first time
+		for i in xrange(2):
+			try:
+				new_dir_tree = self.scanDirectory('')
+			except puppy.PuppyBusyError:
+				print 'updateCache(): Exception: PuppyBusyError'
+				# Sleep for 1 second before trying again
+				time.sleep(1)
+
+		# Failed to update cache. Use existing cache.
+		if new_dir_tree == None:
 			new_dir_tree = self.dir_tree
 			
 		self.dir_tree = new_dir_tree
