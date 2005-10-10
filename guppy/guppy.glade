@@ -51,10 +51,10 @@
 	  <property name="position">0</property>
 
 	  <child>
-	    <widget class="GtkHPaned" id="hpaned1">
+	    <widget class="GtkHPaned" id="hpane">
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
-	      <property name="position">0</property>
+	      <property name="position">520</property>
 
 	      <child>
 		<widget class="GtkHBox" id="hbox20">
@@ -199,7 +199,7 @@
 		</widget>
 		<packing>
 		  <property name="shrink">True</property>
-		  <property name="resize">False</property>
+		  <property name="resize">True</property>
 		</packing>
 	      </child>
 
@@ -310,7 +310,7 @@
 	    </widget>
 	    <packing>
 	      <property name="shrink">True</property>
-	      <property name="resize">False</property>
+	      <property name="resize">True</property>
 	    </packing>
 	  </child>
 
