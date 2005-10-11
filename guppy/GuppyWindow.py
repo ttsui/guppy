@@ -808,15 +808,12 @@ class PathBar(gtk.Container):
 		
 		
 	def do_size_allocate(self, allocation):
-		print 'do_size_allocate(): allocation.width = %d allocation.height = %d' % (allocation.width, allocation.height)
-
-		print 'do_size_allocate(): self.border_width =', self.border_width
+		print '\n\n\ndo_size_allocate(): allocation.width = %d allocation.height = %d' % (allocation.width, allocation.height)
 			
 		# Check to see if slider button required
 		total_btn_width = 0
 		for btn in self.btn_list:
 			width, height = btn.get_child_requisition()
-			print 'btn: label = ', btn.get_data('label').get_text(), ' width = ', width
 			total_btn_width += width + self.spacing
 		
 		print 'total_btn_width = ', total_btn_width	
@@ -840,42 +837,61 @@ class PathBar(gtk.Container):
 			start_idx = 0
 			end_idx = len(self.btn_list) - 1
 
+		alloc_width = allocation.width
 		if need_slider:
-		# TODO: If not enough room work out which button to start allocating to and
-		# which button to stop allocating to.
-			start_idx = len(self.btn_list) - 1
-			if self.first_scrolled_btn:
-				end_idx = self.first_scrolled_btn
-			else:
-				end_idx = len(self.btn_list) - 1
+			alloc_width = alloc_width - down_offset - up_offset
 
-			print 'do_size_allocate(): end_idx = ', end_idx
-			# Find last button which will fit
+			if self.first_scrolled_btn != None:
+				start_idx = self.first_scrolled_btn
+			else:	
+				# New path which doesn't know its left most (first_scrolled_btn) button yet
+				start_idx = len(self.btn_list) - 1
+				
+			print 'alloc_width = ', alloc_width, ' start_idx=', start_idx, ' end_idx=', end_idx
+			# Fill with buttons right of first_scrolled_btn
 			cur_width = 0
-			alloc_width = allocation.width - down_offset - up_offset
-			for i in xrange(end_idx, -1, -1):
-				width, height = self.btn_list[i].get_child_requisition()
+			filled_space = False
+			for btn in self.btn_list[start_idx:]:
+				width, height = btn.get_child_requisition()
 				cur_width += width + self.spacing
 				
-				print 'do_size_allocate() cur_width = ', cur_width, ' alloc_width = ', alloc_width, ' width = ', width, ' start_idx = ', start_idx
+				print 'do_size_allocate() cur_width = ', cur_width, 'idx=', self.btn_list.index(btn), ' label = ', btn.get_data('label').get_text(), ' width = ', width
 				if cur_width > alloc_width:
-					start_idx += 1
+					filled_space = True
 					break
+
+			# Fill with buttons left of start_idx
+			if filled_space == False:
+				for i in xrange(start_idx-1, -1, -1):
+					width, height = self.btn_list[i].get_child_requisition()
+					cur_width += width + self.spacing
+					
+					print 'do_size_allocate() cur_width = ', cur_width, ' i=', i, ' label = ', self.btn_list[i].get_data('label').get_text(), ' width = ', width
+					if cur_width > alloc_width:
+						break
+				start_idx = i + 1	
 				
-				start_idx -= 1
-				
-		print 'do_size_allocate(): need_slider = ', need_slider, ' start_idx = ', start_idx, ' end_idx = ', end_idx
 		
 		# Allocate size in reverse because it is more likely that the last dir in the path
 		# is the dir we want to display
-		for btn in self.btn_list[start_idx:end_idx+1]:
+		cur_width = 0
+		end_idx = start_idx-1
+		for btn in self.btn_list[start_idx:]:
 			width, height = btn.get_child_requisition()
 
 			rect  = gtk.gdk.Rectangle(x=cur_x, y=allocation.y, width=width, height=height)
-			cur_x += width + self.spacing
 
+			cur_x += width + self.spacing
+			cur_width += width + self.spacing
+
+			if cur_width > alloc_width:
+				break
+
+			end_idx += 1
 			btn.size_allocate(rect)
 			btn.show()
+
+		print 'do_size_allocate(): first_scrolled_btn = ', self.first_scrolled_btn, ' need_slider = ', need_slider, ' start_idx = ', start_idx, ' end_idx = ', end_idx
 		
 		# Hide buttons which wont fit.
 		# Hide all buttons before start_idx
@@ -884,6 +900,7 @@ class PathBar(gtk.Container):
 			
 		# Hide all buttons after end_idx
 		for btn in self.btn_list[end_idx+1:]:
+			print 'hide btn label = ', btn.get_data('label').get_text()
 			btn.hide()
 			
 		if need_slider:
@@ -934,6 +951,9 @@ class PathBar(gtk.Container):
 			self.remove(btn)
 			self.btn_list.remove(btn)
 			btn.destroy()
+			
+		# New path so reset the left most button state
+		self.first_scrolled_btn = None
 		
 		# Reset root button
 		if self.active_btn == self.root_btn:
@@ -1013,6 +1033,8 @@ class PathBar(gtk.Container):
 				btn.handler_unblock(handler_id)
 
 				self.active_btn = btn
+				if btn.get_property('visible') == False:
+					self.first_scrolled_btn = self.btn_list.index(btn)
 				return True
 				
 		return False
