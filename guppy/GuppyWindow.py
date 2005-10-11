@@ -80,9 +80,9 @@ class GuppyWindow:
 		self.pvr_path_bar = PathBar(self, 'pvr')
 		self.pc_path_bar = PathBar(self, 'pc')
 		
-		pvr_vbox = self.glade_xml.get_widget('pvr_vbox')
-		pvr_vbox.pack_start(self.pvr_path_bar, expand=False, fill=False)
-		self.pvr_path_bar.show_all()		
+#		pvr_vbox = self.glade_xml.get_widget('pvr_vbox')
+#		pvr_vbox.pack_start(self.pvr_path_bar, expand=False, fill=False)
+#		self.pvr_path_bar.show_all()		
 
 		pc_vbox = self.glade_xml.get_widget('pc_vbox')
 		pc_vbox.pack_start(self.pc_path_bar, expand=False, fill=False)
@@ -742,7 +742,7 @@ class PathBar(gtk.Container):
 	
 	def __init__(self, guppy, fs):
 		gtk.Container.__init__(self)
-#		self.set_spacing(3)
+		self.spacing = 3
 
 		self.set_flags(gtk.NO_WINDOW)		
 		
@@ -774,6 +774,8 @@ class PathBar(gtk.Container):
 		self.add(self.root_btn)
 		self.btn_list.append(self.root_btn)
 
+		self.first_scrolled_btn = None
+		
 	def do_add(self, widget):
 		widget.set_parent(self)
 	
@@ -806,19 +808,99 @@ class PathBar(gtk.Container):
 		
 		
 	def do_size_allocate(self, allocation):
-#		print 'do_size_allocate(): allocation.width = %d allocation.height = %d' % (allocation.width, allocation.height)
+		print 'do_size_allocate(): allocation.width = %d allocation.height = %d' % (allocation.width, allocation.height)
 
-		widgets = [ self.down_btn ] + self.btn_list + [ self.up_btn ]
+		print 'do_size_allocate(): self.border_width =', self.border_width
+			
+		# Check to see if slider button required
+		total_btn_width = 0
+		for btn in self.btn_list:
+			width, height = btn.get_child_requisition()
+			print 'btn: label = ', btn.get_data('label').get_text(), ' width = ', width
+			total_btn_width += width + self.spacing
 		
-		cur_x = allocation.x
-		for widget in widgets:
-			width, height = widget.get_child_requisition()
+		print 'total_btn_width = ', total_btn_width	
+		if total_btn_width == 0:
+			return
+			
+		width, height = self.down_btn.get_child_requisition()
+		down_offset = width + self.spacing
+		
+		width, height = self.up_btn.get_child_requisition()
+		up_offset = width
+		
+		need_slider = False
+		if total_btn_width > allocation.width:
+			need_slider = True
+			cur_x = allocation.x + down_offset
+			start_idx = None
+			end_idx = None
+		else:
+			cur_x = allocation.x
+			start_idx = 0
+			end_idx = len(self.btn_list) - 1
+
+		if need_slider:
+		# TODO: If not enough room work out which button to start allocating to and
+		# which button to stop allocating to.
+			start_idx = len(self.btn_list) - 1
+			if self.first_scrolled_btn:
+				end_idx = self.first_scrolled_btn
+			else:
+				end_idx = len(self.btn_list) - 1
+
+			print 'do_size_allocate(): end_idx = ', end_idx
+			# Find last button which will fit
+			cur_width = 0
+			alloc_width = allocation.width - down_offset - up_offset
+			for i in xrange(end_idx, -1, -1):
+				width, height = self.btn_list[i].get_child_requisition()
+				cur_width += width + self.spacing
+				
+				print 'do_size_allocate() cur_width = ', cur_width, ' alloc_width = ', alloc_width, ' width = ', width, ' start_idx = ', start_idx
+				if cur_width > alloc_width:
+					start_idx += 1
+					break
+				
+				start_idx -= 1
+				
+		print 'do_size_allocate(): need_slider = ', need_slider, ' start_idx = ', start_idx, ' end_idx = ', end_idx
+		
+		# Allocate size in reverse because it is more likely that the last dir in the path
+		# is the dir we want to display
+		for btn in self.btn_list[start_idx:end_idx+1]:
+			width, height = btn.get_child_requisition()
 
 			rect  = gtk.gdk.Rectangle(x=cur_x, y=allocation.y, width=width, height=height)
-			cur_x += width
+			cur_x += width + self.spacing
 
-			widget.size_allocate(rect)
+			btn.size_allocate(rect)
+			btn.show()
 		
+		# Hide buttons which wont fit.
+		# Hide all buttons before start_idx
+		for i in xrange(start_idx-1, -1, -1):
+			self.btn_list[i].hide()
+			
+		# Hide all buttons after end_idx
+		for btn in self.btn_list[end_idx+1:]:
+			btn.hide()
+			
+		if need_slider:
+			width, height = self.down_btn.get_child_requisition()
+			rect  = gtk.gdk.Rectangle(x=allocation.x, y=allocation.y, width=width, height=height)
+			self.down_btn.size_allocate(rect)
+			self.down_btn.show()
+
+			width, height = self.up_btn.get_child_requisition()
+			rect  = gtk.gdk.Rectangle(y=allocation.y, width=width, height=height)
+			rect.x = allocation.x + allocation.width - width
+			self.up_btn.size_allocate(rect)
+			self.up_btn.show()
+		else:
+			self.down_btn.hide()
+			self.up_btn.hide()
+			
 	def on_path_btn_clicked(self, widget, path):
 		print 'on_path_btn_clicked(): path=', path
 
@@ -853,8 +935,6 @@ class PathBar(gtk.Container):
 			self.btn_list.remove(btn)
 			btn.destroy()
 		
-		print 'setPath(): down_btn.width = ', self.down_btn.get_allocation().width		
-		
 		# Reset root button
 		if self.active_btn == self.root_btn:
 			handler_id = self.active_btn.get_data('handler_id')
@@ -885,7 +965,6 @@ class PathBar(gtk.Container):
 				btn_handler_id = btn.connect('clicked', self.on_path_btn_clicked, path)
 				btn.set_data('handler_id', btn_handler_id)
 				
-			
 		if btn == None:
 			btn = self.root_btn
 			btn_handler_id = self.root_btn.get_data('handler_id')
