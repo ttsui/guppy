@@ -934,6 +934,9 @@ class PathBar(gtk.Container):
 	def setPath(self, path):
 		path = path.replace('\\', '/')
 		path = os.path.normpath(path)
+		# os.path.normpath() doesn't normalise '//' to '/'
+		if path == '//':
+			path = '/'
 		
 		print 'setPath(): path=', path
 

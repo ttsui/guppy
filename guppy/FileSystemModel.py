@@ -162,6 +162,9 @@ class PCFileSystemModel(FileSystemModel):
 			dir = self.current_dir
 
 		dir = os.path.normpath(dir)
+		# os.path.normpath() doesn't normalise '//' to '/'
+		if dir == '//':
+			dir = '/'
 		
 		if not os.access(dir, os.F_OK):
 			return
