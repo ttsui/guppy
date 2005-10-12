@@ -758,10 +758,13 @@ class PathBar(gtk.Container):
 		arrow = gtk.Arrow(gtk.ARROW_LEFT, gtk.SHADOW_OUT)
 		self.down_btn.add(arrow)
 		self.down_btn.show_all()
+		self.down_btn.connect('clicked', self.on_down_btn_clicked)
+		
 		self.up_btn = gobject.new(gtk.Button, visible=True)
 		arrow = gtk.Arrow(gtk.ARROW_RIGHT, gtk.SHADOW_OUT)
 		self.up_btn.add(arrow)
 		self.up_btn.show_all()
+		self.up_btn.connect('clicked', self.on_up_btn_clicked)
 		gtk.widget_pop_composite_child()
 
 		self.down_btn.set_parent(self)
@@ -816,6 +819,8 @@ class PathBar(gtk.Container):
 	def do_size_allocate(self, allocation):
 		print '\n\n\ndo_size_allocate(): allocation.width = %d allocation.height = %d' % (allocation.width, allocation.height)
 
+		self.allocation = allocation
+		
 		if len(self.btn_list) == 0:
 			return
 			
@@ -913,13 +918,25 @@ class PathBar(gtk.Container):
 			width, height = self.down_btn.get_child_requisition()
 			rect  = gtk.gdk.Rectangle(x=allocation.x, y=allocation.y, width=width, height=allocation.height)
 			self.down_btn.size_allocate(rect)
+			# If first button is already visible then we can't go down anymore
+			if self.btn_list[0].get_property('visible'):
+				self.down_btn.set_sensitive(False)
+			else:
+				self.down_btn.set_sensitive(True)
+				
 			self.down_btn.show()
 
 			width, height = self.up_btn.get_child_requisition()
 			rect  = gtk.gdk.Rectangle(y=allocation.y, width=width, height=allocation.height)
 			rect.x = allocation.x + allocation.width - width
 			self.up_btn.size_allocate(rect)
+			# If last button is already visible then we can't go up anymore
+			if self.btn_list[-1].get_property('visible'):
+				self.up_btn.set_sensitive(False)
+			else:
+				self.up_btn.set_sensitive(True)
 			self.up_btn.show()
+			
 		else:
 			self.down_btn.hide()
 			self.up_btn.hide()
@@ -937,6 +954,55 @@ class PathBar(gtk.Container):
 			self.guppy.pc_model.changeDir(path)
 			self.guppy.pc_path_entry.set_text(path)
 
+	def on_down_btn_clicked(self, btn):
+		self.queue_resize()
+
+		for i in xrange(len(self.btn_list)):
+			# The button before the currently left most visible button should
+			# be shown.
+			if self.btn_list[i].get_property('visible'):
+				self.first_scrolled_btn = i - 1
+				break
+			
+		# This happens when there are no more buttons to scroll to the left
+		if self.first_scrolled_btn == -1:
+			self.first_scrolled_btn = 0
+			
+	def on_up_btn_clicked(self, btn):
+		self.queue_resize()
+		
+		# Start search for first non-visible button on the right.
+		for i in xrange(len(self.btn_list)-1, -1, -1):
+			if self.btn_list[i].get_property('visible'):
+				start_idx = i + 1
+				break
+		
+		print '\n\n\non_up_btn_clicked(): start_idx = ', start_idx, ' label = ', self.btn_list[start_idx].get_data('label').get_text()
+		pathbar = self.get_allocation()
+		alloc_width = pathbar.width
+		
+		# Subtract space for down slider button
+		width, height = self.down_btn.get_child_requisition()
+		alloc_width -= width + self.spacing
+		
+		# Subtract space for up slider button
+		width, height = self.up_btn.get_child_requisition()
+		alloc_width -= width
+		
+		print 'on_up_btn_clicked(): alloc_width = ', alloc_width
+		# Find all the buttons to the left of start_idx which will fit.
+		cur_width = 0		
+		for i in xrange(start_idx, -1, -1):
+			btn_alloc = self.btn_list[i].get_allocation()
+			cur_width += btn_alloc.width + self.spacing
+			
+			print 'on_up_btn_clicked(): cur_width = ', cur_width, ' i = ', i, ' label = ', self.btn_list[i].get_data('label').get_text(), ' width = ', btn_alloc.width
+			if cur_width >= alloc_width:
+				break
+		self.first_scrolled_btn = i + 1
+		
+		print 'on_up_btn_clicked(): self.first_scrolled_btn = ', self.first_scrolled_btn
+		
 	def setPath(self, path):
 		path = path.replace('\\', '/')
 		path = os.path.normpath(path)
