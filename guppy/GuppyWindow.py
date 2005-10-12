@@ -809,6 +809,9 @@ class PathBar(gtk.Container):
 		
 	def do_size_allocate(self, allocation):
 		print '\n\n\ndo_size_allocate(): allocation.width = %d allocation.height = %d' % (allocation.width, allocation.height)
+
+		if len(self.btn_list) == 0:
+			return
 			
 		# Check to see if slider button required
 		total_btn_width = 0
@@ -816,41 +819,37 @@ class PathBar(gtk.Container):
 			width, height = btn.get_child_requisition()
 			total_btn_width += width + self.spacing
 		
-		print 'total_btn_width = ', total_btn_width	
-		if total_btn_width == 0:
-			return
-			
 		width, height = self.down_btn.get_child_requisition()
 		down_offset = width + self.spacing
 		
 		width, height = self.up_btn.get_child_requisition()
 		up_offset = width
 		
-		need_slider = False
-		if total_btn_width > allocation.width:
-			need_slider = True
-			cur_x = allocation.x + down_offset
-			start_idx = None
-			end_idx = None
-		else:
-			cur_x = allocation.x
+		if total_btn_width <= allocation.width:
+			need_slider = False
 			start_idx = 0
-			end_idx = len(self.btn_list) - 1
-
-		alloc_width = allocation.width
-		if need_slider:
-			alloc_width = alloc_width - down_offset - up_offset
+			cur_x = allocation.x
+			alloc_width = allocation.width
+		else:
+			need_slider = True
+			start_idx = None
+			cur_x = allocation.x + down_offset
+			alloc_width = allocation.width - down_offset - up_offset
 
 			if self.first_scrolled_btn != None:
 				start_idx = self.first_scrolled_btn
 			else:	
-				# New path which doesn't know its left most (first_scrolled_btn) button yet
+				# self.first_scrolled_btn is None which means we are
+				# allocating space for a new path. This means that the last dir
+				# will be the one required to be visible.
 				start_idx = len(self.btn_list) - 1
 				
-			print 'alloc_width = ', alloc_width, ' start_idx=', start_idx, ' end_idx=', end_idx
-			# Fill with buttons right of first_scrolled_btn
+			print 'alloc_width = ', alloc_width, ' start_idx=', start_idx
+
 			cur_width = 0
 			filled_space = False
+
+			# See if we can fill the space with btns to the right of start_idx
 			for btn in self.btn_list[start_idx:]:
 				width, height = btn.get_child_requisition()
 				cur_width += width + self.spacing
@@ -860,7 +859,8 @@ class PathBar(gtk.Container):
 					filled_space = True
 					break
 
-			# Fill with buttons left of start_idx
+			# If we didn't fill all the available space with buttons from the 
+			# right of start_idx fill in with buttons to the left of start_idx.
 			if filled_space == False:
 				for i in xrange(start_idx-1, -1, -1):
 					width, height = self.btn_list[i].get_child_requisition()
@@ -869,12 +869,13 @@ class PathBar(gtk.Container):
 					print 'do_size_allocate() cur_width = ', cur_width, ' i=', i, ' label = ', self.btn_list[i].get_data('label').get_text(), ' width = ', width
 					if cur_width > alloc_width:
 						break
+						
 				start_idx = i + 1	
 				
-		
-		# Allocate size in reverse because it is more likely that the last dir in the path
-		# is the dir we want to display
+		# Allocate space for all buttons from start_idx until we run out of
+		# space.		
 		cur_width = 0
+		# Intialise end_idx to start_idx - 1 incase there is only one button
 		end_idx = start_idx-1
 		for btn in self.btn_list[start_idx:]:
 			width, height = btn.get_child_requisition()
@@ -893,7 +894,6 @@ class PathBar(gtk.Container):
 
 		print 'do_size_allocate(): first_scrolled_btn = ', self.first_scrolled_btn, ' need_slider = ', need_slider, ' start_idx = ', start_idx, ' end_idx = ', end_idx
 		
-		# Hide buttons which wont fit.
 		# Hide all buttons before start_idx
 		for i in xrange(start_idx-1, -1, -1):
 			self.btn_list[i].hide()
