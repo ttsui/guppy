@@ -80,9 +80,9 @@ class GuppyWindow:
 		self.pvr_path_bar = PathBar(self, 'pvr')
 		self.pc_path_bar = PathBar(self, 'pc')
 		
-#		pvr_vbox = self.glade_xml.get_widget('pvr_vbox')
-#		pvr_vbox.pack_start(self.pvr_path_bar, expand=False, fill=False)
-#		self.pvr_path_bar.show_all()		
+		pvr_vbox = self.glade_xml.get_widget('pvr_vbox')
+		pvr_vbox.pack_start(self.pvr_path_bar, expand=False, fill=False)
+		self.pvr_path_bar.show_all()		
 
 		pc_vbox = self.glade_xml.get_widget('pc_vbox')
 		pc_vbox.pack_start(self.pc_path_bar, expand=False, fill=False)
@@ -771,10 +771,33 @@ class PathBar(gtk.Container):
 		self.up_btn.set_parent(self)
 		
 		# Add root dir button
-		# FIXME: Use icon for root dir
-		label = gtk.Label('/')
 		self.root_btn = gtk.ToggleButton()
-		self.root_btn.add(label)
+
+		icon_theme = gtk.icon_theme_get_default()
+		try:
+			settings = gtk.settings_get_for_screen(self.get_screen())
+			icon_size = gtk.icon_size_lookup_for_settings(settings, gtk.ICON_SIZE_MENU)
+			if icon_size:
+				icon_size = max(icon_size[0], icon_size[1])
+			else:
+				icon_size = 16
+			print 'PathBar::__init__() icon_size = ', icon_size
+			pixbuf = icon_theme.load_icon('gnome-dev-harddisk', icon_size, gtk.ICON_LOOKUP_USE_BUILTIN)
+			
+			if pixbuf != None:
+				image = gtk.Image()
+				image.set_from_pixbuf(pixbuf)
+				self.root_btn.add(image)
+			else:
+				# Use fallback image
+				pass
+				
+		except gobject.GError, exc:
+			print "can't load icon", exc	
+
+		label = gtk.Label('/')
+#		self.root_btn.add(label)
+			
 		self.root_btn.set_data('label', label)
 				
 		btn_handler_id = self.root_btn.connect('clicked', self.on_path_btn_clicked, '/')
