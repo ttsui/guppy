@@ -754,8 +754,14 @@ class PathBar(gtk.Container):
 		
 		gtk.widget_push_composite_child()
 		# TODO: Use icon for button
-		self.down_btn = gobject.new(gtk.Button, visible=True, label='<')
-		self.up_btn = gobject.new(gtk.Button, visible=True, label='>')
+		self.down_btn = gobject.new(gtk.Button, visible=True)
+		arrow = gtk.Arrow(gtk.ARROW_LEFT, gtk.SHADOW_OUT)
+		self.down_btn.add(arrow)
+		self.down_btn.show_all()
+		self.up_btn = gobject.new(gtk.Button, visible=True)
+		arrow = gtk.Arrow(gtk.ARROW_RIGHT, gtk.SHADOW_OUT)
+		self.up_btn.add(arrow)
+		self.up_btn.show_all()
 		gtk.widget_pop_composite_child()
 
 		self.down_btn.set_parent(self)
@@ -880,7 +886,7 @@ class PathBar(gtk.Container):
 		for btn in self.btn_list[start_idx:]:
 			width, height = btn.get_child_requisition()
 
-			rect  = gtk.gdk.Rectangle(x=cur_x, y=allocation.y, width=width, height=height)
+			rect  = gtk.gdk.Rectangle(x=cur_x, y=allocation.y, width=width, height=allocation.height)
 
 			cur_x += width + self.spacing
 			cur_width += width + self.spacing
@@ -905,12 +911,12 @@ class PathBar(gtk.Container):
 			
 		if need_slider:
 			width, height = self.down_btn.get_child_requisition()
-			rect  = gtk.gdk.Rectangle(x=allocation.x, y=allocation.y, width=width, height=height)
+			rect  = gtk.gdk.Rectangle(x=allocation.x, y=allocation.y, width=width, height=allocation.height)
 			self.down_btn.size_allocate(rect)
 			self.down_btn.show()
 
 			width, height = self.up_btn.get_child_requisition()
-			rect  = gtk.gdk.Rectangle(y=allocation.y, width=width, height=height)
+			rect  = gtk.gdk.Rectangle(y=allocation.y, width=width, height=allocation.height)
 			rect.x = allocation.x + allocation.width - width
 			self.up_btn.size_allocate(rect)
 			self.up_btn.show()
