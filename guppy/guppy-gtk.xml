@@ -24,6 +24,9 @@
 		<menu action="View">
 			<menuitem action="ShowFileTransfer"/>
 			<menuitem action="ShowHidden"/>
+			<separator/>
+			<menuitem action="GotoPCDir"/>
+			<menuitem action="GotoPVRDir"/>
 		</menu>
 		<menu action="Transfer">
 			<menuitem action="Turbo"/>

@@ -34,8 +34,9 @@ DEBUG = False
 class FileSystemModel(gtk.ListStore):
 	TYPE_COL, ICON_COL, NAME_COL, DATE_COL, SIZE_COL = range(5)
 
-	def __init__(self):
+	def __init__(self, show_parent_dir=False):
 		self.current_dir = None
+		self.show_parent_dir = show_parent_dir
 		gtk.ListStore.__init__(self, gobject.TYPE_STRING, gobject.TYPE_STRING,
 		                             gobject.TYPE_STRING, gobject.TYPE_STRING,
 		                             gobject.TYPE_STRING)
@@ -146,8 +147,8 @@ class FileSystemModel(gtk.ListStore):
 			return 1
 
 class PCFileSystemModel(FileSystemModel):
-	def __init__(self):
-		FileSystemModel.__init__(self)
+	def __init__(self, show_parent_dir=False):
+		FileSystemModel.__init__(self, show_parent_dir)
 		
 		# FIXME: Get dir from when Guppy last exited
 		self.current_dir = os.environ['HOME']
@@ -175,13 +176,14 @@ class PCFileSystemModel(FileSystemModel):
 			self.clear()
 		
 		# Parent directory
-		self.append(['d', gtk.STOCK_DIRECTORY, '..', '', ''])
+		if self.show_parent_dir:
+			self.append(['d', gtk.STOCK_DIRECTORY, '..', '', ''])
 		
 		for file in os.listdir(self.current_dir):
 			try:
 				mode = os.stat(self.current_dir + '/' + file)
 			except OSError, (errno, strerror):
-				print 'PCFileSystemModel::changeDir(): OSError(%s): %s\n' % (errno, strerror)
+				print 'PCFileSystemModel::changeDir(%s): OSError(%s): %s\n' % (self.current_dir + '/' + file, errno, strerror)
 				continue
 
 			if stat.S_ISDIR(mode[stat.ST_MODE]):
@@ -216,8 +218,8 @@ class PCFileSystemModel(FileSystemModel):
 
 
 class PVRFileSystemModel(FileSystemModel):
-	def __init__(self):
-		FileSystemModel.__init__(self)
+	def __init__(self, show_parent_dir=False):
+		FileSystemModel.__init__(self, show_parent_dir)
 
 		# FIXME: Get dir from when Guppy last exited
 		# We need to use an empty string to list the PVR root directory.
@@ -241,7 +243,6 @@ class PVRFileSystemModel(FileSystemModel):
 	def changeDir(self, dir=None):
 		"""Change directory and update model data accordingly.
 		"""
-		print 'changeDir(): dir = ', dir
 		if dir:
 			# Append CWD if dir is not an absolute path
 			if dir[0] != '\\':
@@ -261,7 +262,6 @@ class PVRFileSystemModel(FileSystemModel):
 		else:
 			dir = norm_path.replace('/', '\\')
 
-		print 'changeDir(): dir2 = ', dir		
 		dir_node = self.findDirectory(dir)
 		
 		self.current_dir = dir
@@ -285,7 +285,8 @@ class PVRFileSystemModel(FileSystemModel):
 			self.append(dir_info)
 			
 		# Add ".." directory
-		self.append([ 'd', gtk.STOCK_DIRECTORY, '..', '', ''])
+		if self.show_parent_dir:
+			self.append([ 'd', gtk.STOCK_DIRECTORY, '..', '', ''])
 
 	def findDirectory(self, path):
 		"""Find the DirectoryNode object for the given path.
@@ -298,7 +299,6 @@ class PVRFileSystemModel(FileSystemModel):
 		for dir in path.split('\\'):
 			if len(dir) == 0:
 				continue
-			print 'findDirectory(): dir = ', dir
 			cur_node, node_info = cur_node.getDirectory(dir)
 			if cur_node == None:
 				break

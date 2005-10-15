@@ -40,6 +40,13 @@ class GuppyWindow:
 	QUIT_CMD = 'Quit'
 	
 	def __init__(self, datadir=''):	
+		# The PathBar widget only works with PyGtk 2.8 and greater
+		major, minor, micro = gtk.pygtk_version
+		if major <= 2 and minor < 8:
+			self.no_path_bar_support = True
+		else:
+			self.no_path_bar_support = False
+	
 		# Initialise Gtk thread support
 		gtk.gdk.threads_init()
 
@@ -72,24 +79,41 @@ class GuppyWindow:
 		self.pc_total_size_label = self.glade_xml.get_widget('pc_total_size_label')
 		self.pc_free_space_label = self.glade_xml.get_widget('pc_free_space_label')
 	
-		self.pvr_model = PVRFileSystemModel()
-		self.pc_model = PCFileSystemModel()
+		if self.no_path_bar_support:
+			show_parent_dir = True
+		else:
+			show_parent_dir = False
+
+		self.pvr_model = PVRFileSystemModel(show_parent_dir)
+		self.pc_model = PCFileSystemModel(show_parent_dir)
 		
 		self.updateFreeSpace()
 		
-		self.pvr_path_bar = PathBar(self, 'pvr')
-		self.pc_path_bar = PathBar(self, 'pc')
+		self.pc_path_entry_box = self.glade_xml.get_widget('pc_path_entry_box')
+		self.pvr_path_entry_box = self.glade_xml.get_widget('pvr_path_entry_box')
 		
-		pvr_vbox = self.glade_xml.get_widget('pvr_vbox')
-		pvr_vbox.pack_start(self.pvr_path_bar, expand=False, fill=False)
-		self.pvr_path_bar.show_all()		
-
-		pc_vbox = self.glade_xml.get_widget('pc_vbox')
-		pc_vbox.pack_start(self.pc_path_bar, expand=False, fill=False)
-		self.pc_path_bar.show_all()
-
-		self.updatePathBar(self.pvr_model)
-		self.updatePathBar(self.pc_model)
+		self.pc_path_bar = None
+		self.pvr_path_bar = None
+		if self.no_path_bar_support:
+			self.pc_path_entry_box.show()
+			self.pvr_path_entry_box.show()
+		else:
+			self.pvr_path_bar = PathBar(self, 'pvr')
+			self.pvr_path_bar.set_border_width(3)
+			
+			self.pc_path_bar = PathBar(self, 'pc')
+			self.pc_path_bar.set_border_width(3)
+			
+			pvr_vbox = self.glade_xml.get_widget('pvr_path_vbox')
+			pvr_vbox.pack_start(self.pvr_path_bar, expand=True, fill=True)
+			self.pvr_path_bar.show_all()		
+	
+			pc_vbox = self.glade_xml.get_widget('pc_path_vbox')
+			pc_vbox.pack_start(self.pc_path_bar, expand=True, fill=True)
+			self.pc_path_bar.show_all()
+	
+			self.updatePathBar(self.pvr_model)
+			self.updatePathBar(self.pc_model)
 		
 		# Timer to update screen info
 		gobject.timeout_add(GuppyWindow.SCREEN_INFO_UPDATE_INTERVAL, self.update_screen_info)
@@ -121,6 +145,9 @@ class GuppyWindow:
 		                         ('Help', None, _('_Help')),
                                  ('About', gtk.STOCK_ABOUT , _('_About'), None, None, self.on_about)])
 
+		actiongroup.add_actions([('GotoPCDir', None, _('Goto PC Location'), '<Ctrl>l', None, self.on_goto_pc_dir),
+		                         ('GotoPVRDir', None, _('Goto PVR Location'), '<Ctrl>k', None, self.on_goto_pvr_dir)])
+			                         
 		# FIXME: Use a proper icon for Turbo button
 		actiongroup.add_toggle_actions([('Turbo', gtk.STOCK_EXECUTE, _('Tur_bo'), '<Ctrl>t', _('Turbo Transfer'), self.on_turbo_toggled),
 		                                ('ShowHidden', None, _('Show Hidden Files'), None, _('Show hidden files'), self.on_show_hidden_toggled),
@@ -255,10 +282,8 @@ class GuppyWindow:
 		order = col.get_sort_order()
 		print order
 		if order == gtk.SORT_ASCENDING:
-			print 'foo'
 			order = gtk.SORT_DESCENDING
 		else:
-			print 'bar'
 			order = gtk.SORT_ASCENDING
 
 		col.set_sort_order(order)
@@ -272,16 +297,34 @@ class GuppyWindow:
 		# Return True to stop event from propagating to default handler
 		# which destroys the window.
 		return True
+
+	def on_goto_pc_dir(self, widget, data=None):
+		if self.pc_path_bar:
+			self.pc_path_bar.hide()		
+			self.pc_path_entry_box.show()
+		self.pc_path_entry.grab_focus()
+
+	def on_goto_pvr_dir(self, widget, data=None):		
+		if self.pvr_path_bar:
+			self.pvr_path_bar.hide()		
+			self.pvr_path_entry_box.show()
+		self.pvr_path_entry.grab_focus()
 		
 	def on_path_entry_activate(self, widget, fs_model):
 		path = widget.get_text()
 		fs_model.changeDir(path)
 		
 		if fs_model == self.pc_model:
-			self.pc_path_bar.setPath(path)
 			self.updateFreeSpace(self.pc_model)
+			if self.no_path_bar_support == False:
+				self.pc_path_entry_box.hide()
+				self.pc_path_bar.setPath(path)
+				self.pc_path_bar.show()
 		else:
-			self.pvr_path_bar.setPath(path)
+			if self.no_path_bar_support == False:
+				self.pvr_path_entry_box.hide()
+				self.pvr_path_bar.setPath(path)
+				self.pvr_path_bar.show()
 		
 	def on_quit(self, widget, data=None):
 		# Empty out transfer queue so the TransferThread can't get another
@@ -357,11 +400,17 @@ class GuppyWindow:
 			fs_model.changeDir(name)
 			path = fs_model.getCWD()
 			if fs_model == self.pc_model:
-				self.pc_path_bar.setPath(path)
+				if self.no_path_bar_support == False:
+					self.pc_path_entry_box.hide()
+					self.pc_path_bar.setPath(path)
+					self.pc_path_bar.show()
 				self.pc_path_entry.set_text(path)
 				self.updateFreeSpace(self.pc_model)
 			else:
-				self.pvr_path_bar.setPath(path)
+				if self.no_path_bar_support == False:
+					self.pvr_path_entry_box.hide()
+					self.pvr_path_bar.setPath(path)
+					self.pvr_path_bar.show()
 				self.pvr_path_entry.set_text(path)
 			
 	def on_turbo_toggled(self, widget, data=None):
@@ -536,6 +585,9 @@ class GuppyWindow:
 		fs_model  Model to update path bar. Default is None which updates both
 		          file system.
 		'''
+		if self.no_path_bar_support:
+			return
+			
 		if fs_model == self.pvr_model:
 			self.pvr_path_bar.setPath(fs_model.getCWD())
 		else:
@@ -753,7 +805,6 @@ class PathBar(gtk.Container):
 		self.active_btn = None
 		
 		gtk.widget_push_composite_child()
-		# TODO: Use icon for button
 		self.down_btn = gobject.new(gtk.Button, visible=True)
 		arrow = gtk.Arrow(gtk.ARROW_LEFT, gtk.SHADOW_OUT)
 		self.down_btn.add(arrow)
@@ -772,7 +823,9 @@ class PathBar(gtk.Container):
 		
 		# Add root dir button
 		self.root_btn = gtk.ToggleButton()
-
+		label = gtk.Label('/')
+		self.root_btn.set_data('label', label)
+				
 		icon_theme = gtk.icon_theme_get_default()
 		try:
 			settings = gtk.settings_get_for_screen(self.get_screen())
@@ -781,25 +834,19 @@ class PathBar(gtk.Container):
 				icon_size = max(icon_size[0], icon_size[1])
 			else:
 				icon_size = 16
-			print 'PathBar::__init__() icon_size = ', icon_size
+
 			pixbuf = icon_theme.load_icon('gnome-dev-harddisk', icon_size, gtk.ICON_LOOKUP_USE_BUILTIN)
-			
-			if pixbuf != None:
-				image = gtk.Image()
-				image.set_from_pixbuf(pixbuf)
-				self.root_btn.add(image)
-			else:
-				# Use fallback image
-				pass
+			if pixbuf == None:
+				pixbuf = self.render_icon(gtk.STOCK_HARDDISK, gtk.ICON_SIZE_MENU, 'root dir')
+				
+			image = gtk.Image()
+			image.set_from_pixbuf(pixbuf)
+			self.root_btn.add(image)
 				
 		except gobject.GError, exc:
-			print "can't load icon", exc	
+			print "ERROR: Can't load icon: ", exc	
+			self.root_btn.add(label)
 
-		label = gtk.Label('/')
-#		self.root_btn.add(label)
-			
-		self.root_btn.set_data('label', label)
-				
 		btn_handler_id = self.root_btn.connect('clicked', self.on_path_btn_clicked, '/')
 		self.root_btn.set_data('handler_id', btn_handler_id)
 		
@@ -825,7 +872,7 @@ class PathBar(gtk.Container):
 			self.queue_resize()
 		
 	def do_size_request(self, requisition):
-#		print 'do_size_request()'
+		#print 'do_size_request()'
 		req_width = 0
 		req_height = 0
 		widgets = [ self.down_btn, self.up_btn ] + self.btn_list
@@ -835,12 +882,14 @@ class PathBar(gtk.Container):
 			req_width += widget_req.width
 			req_height = max(req_height, widget_req.height)
 
-		requisition.width = req_width
-		requisition.height = req_height
+		requisition.width = req_width + (self.border_width * 2)
+		requisition.height = req_height + (self.border_width * 2)
+		
+		self.requisition = requisition
 		
 		
 	def do_size_allocate(self, allocation):
-		print '\n\n\ndo_size_allocate(): allocation.width = %d allocation.height = %d' % (allocation.width, allocation.height)
+		#print '\n\n\ndo_size_allocate(): allocation.width = %d allocation.height = %d' % (allocation.width, allocation.height)
 
 		self.allocation = allocation
 		
@@ -859,16 +908,19 @@ class PathBar(gtk.Container):
 		width, height = self.up_btn.get_child_requisition()
 		up_offset = width
 		
-		if total_btn_width <= allocation.width:
+		alloc_width = allocation.width - (self.border_width * 2)
+		alloc_height = allocation.height - (self.border_width * 2)
+		alloc_x = allocation.x + self.border_width
+		alloc_y = allocation.y + self.border_width
+		if total_btn_width <= alloc_width:
 			need_slider = False
 			start_idx = 0
-			cur_x = allocation.x
-			alloc_width = allocation.width
+			cur_x = alloc_x
 		else:
 			need_slider = True
 			start_idx = None
-			cur_x = allocation.x + down_offset
-			alloc_width = allocation.width - down_offset - up_offset
+			cur_x = alloc_x + down_offset
+			alloc_width -= down_offset + up_offset
 
 			if self.first_scrolled_btn != None:
 				start_idx = self.first_scrolled_btn
@@ -878,7 +930,7 @@ class PathBar(gtk.Container):
 				# will be the one required to be visible.
 				start_idx = len(self.btn_list) - 1
 				
-			print 'alloc_width = ', alloc_width, ' start_idx=', start_idx
+			#print 'alloc_width = ', alloc_width, ' start_idx=', start_idx
 
 			cur_width = 0
 			filled_space = False
@@ -888,7 +940,7 @@ class PathBar(gtk.Container):
 				width, height = btn.get_child_requisition()
 				cur_width += width + self.spacing
 				
-				print 'do_size_allocate() cur_width = ', cur_width, 'idx=', self.btn_list.index(btn), ' label = ', btn.get_data('label').get_text(), ' width = ', width
+				#print 'do_size_allocate() cur_width = ', cur_width, 'idx=', self.btn_list.index(btn), ' label = ', btn.get_data('label').get_text(), ' width = ', width
 				if cur_width > alloc_width:
 					filled_space = True
 					break
@@ -900,7 +952,7 @@ class PathBar(gtk.Container):
 					width, height = self.btn_list[i].get_child_requisition()
 					cur_width += width + self.spacing
 					
-					print 'do_size_allocate() cur_width = ', cur_width, ' i=', i, ' label = ', self.btn_list[i].get_data('label').get_text(), ' width = ', width
+					#print 'do_size_allocate() cur_width = ', cur_width, ' i=', i, ' label = ', self.btn_list[i].get_data('label').get_text(), ' width = ', width
 					if cur_width > alloc_width:
 						break
 						
@@ -914,7 +966,7 @@ class PathBar(gtk.Container):
 		for btn in self.btn_list[start_idx:]:
 			width, height = btn.get_child_requisition()
 
-			rect  = gtk.gdk.Rectangle(x=cur_x, y=allocation.y, width=width, height=allocation.height)
+			rect  = gtk.gdk.Rectangle(x=cur_x, y=alloc_y, width=width, height=alloc_height)
 
 			cur_x += width + self.spacing
 			cur_width += width + self.spacing
@@ -926,7 +978,7 @@ class PathBar(gtk.Container):
 			btn.size_allocate(rect)
 			btn.show()
 
-		print 'do_size_allocate(): first_scrolled_btn = ', self.first_scrolled_btn, ' need_slider = ', need_slider, ' start_idx = ', start_idx, ' end_idx = ', end_idx
+		#print 'do_size_allocate(): first_scrolled_btn = ', self.first_scrolled_btn, ' need_slider = ', need_slider, ' start_idx = ', start_idx, ' end_idx = ', end_idx
 		
 		# Hide all buttons before start_idx
 		for i in xrange(start_idx-1, -1, -1):
@@ -934,12 +986,11 @@ class PathBar(gtk.Container):
 			
 		# Hide all buttons after end_idx
 		for btn in self.btn_list[end_idx+1:]:
-			print 'hide btn label = ', btn.get_data('label').get_text()
 			btn.hide()
 			
 		if need_slider:
 			width, height = self.down_btn.get_child_requisition()
-			rect  = gtk.gdk.Rectangle(x=allocation.x, y=allocation.y, width=width, height=allocation.height)
+			rect  = gtk.gdk.Rectangle(x=alloc_x, y=alloc_y, width=width, height=alloc_height)
 			self.down_btn.size_allocate(rect)
 			# If first button is already visible then we can't go down anymore
 			if self.btn_list[0].get_property('visible'):
@@ -950,8 +1001,8 @@ class PathBar(gtk.Container):
 			self.down_btn.show()
 
 			width, height = self.up_btn.get_child_requisition()
-			rect  = gtk.gdk.Rectangle(y=allocation.y, width=width, height=allocation.height)
-			rect.x = allocation.x + allocation.width - width
+			rect  = gtk.gdk.Rectangle(y=alloc_y, width=width, height=alloc_height)
+			rect.x = allocation.x + allocation.width - width - self.border_width
 			self.up_btn.size_allocate(rect)
 			# If last button is already visible then we can't go up anymore
 			if self.btn_list[-1].get_property('visible'):
@@ -965,8 +1016,6 @@ class PathBar(gtk.Container):
 			self.up_btn.hide()
 			
 	def on_path_btn_clicked(self, widget, path):
-		print 'on_path_btn_clicked(): path=', path
-
 		self.updatePathBtns(path)
 
 		if self.fs == 'pvr':
@@ -1000,7 +1049,7 @@ class PathBar(gtk.Container):
 				start_idx = i + 1
 				break
 		
-		print '\n\n\non_up_btn_clicked(): start_idx = ', start_idx, ' label = ', self.btn_list[start_idx].get_data('label').get_text()
+		#print '\n\n\non_up_btn_clicked(): start_idx = ', start_idx, ' label = ', self.btn_list[start_idx].get_data('label').get_text()
 		pathbar = self.get_allocation()
 		alloc_width = pathbar.width
 		
@@ -1012,19 +1061,16 @@ class PathBar(gtk.Container):
 		width, height = self.up_btn.get_child_requisition()
 		alloc_width -= width
 		
-		print 'on_up_btn_clicked(): alloc_width = ', alloc_width
 		# Find all the buttons to the left of start_idx which will fit.
 		cur_width = 0		
 		for i in xrange(start_idx, -1, -1):
 			btn_alloc = self.btn_list[i].get_allocation()
 			cur_width += btn_alloc.width + self.spacing
 			
-			print 'on_up_btn_clicked(): cur_width = ', cur_width, ' i = ', i, ' label = ', self.btn_list[i].get_data('label').get_text(), ' width = ', btn_alloc.width
+			#print 'on_up_btn_clicked(): cur_width = ', cur_width, ' i = ', i, ' label = ', self.btn_list[i].get_data('label').get_text(), ' width = ', btn_alloc.width
 			if cur_width >= alloc_width:
 				break
 		self.first_scrolled_btn = i + 1
-		
-		print 'on_up_btn_clicked(): self.first_scrolled_btn = ', self.first_scrolled_btn
 		
 	def setPath(self, path):
 		path = path.replace('\\', '/')
@@ -1033,8 +1079,6 @@ class PathBar(gtk.Container):
 		if path == '//':
 			path = '/'
 		
-		print 'setPath(): path=', path
-
 		# Check if we are changing to a dir on the same path
 		if self.updatePathBtns(path):
 			return
@@ -1065,7 +1109,6 @@ class PathBar(gtk.Container):
 						
 		dirs = path.split('/')
 
-		print 'setPath(): dirs = ', dirs
 		path = ''
 		btn = None
 		for dir in dirs:
@@ -1117,7 +1160,6 @@ class PathBar(gtk.Container):
 				self.active_btn.set_active(False)
 
 				label = self.active_btn.get_data('label')
-				print 'updatePathBtns() old btn label = ', label.get_text()
 				label.set_text(label.get_text())
 				self.active_btn.handler_unblock(handler_id)
 				
@@ -1126,7 +1168,6 @@ class PathBar(gtk.Container):
 				btn.set_active(True)
 
 				label = btn.get_data('label')
-				print 'updatePathBtns() old new label = ', label.get_text()
 				label.set_markup('<b>' + label.get_text() + '</b>')
 				btn.handler_unblock(handler_id)
 
