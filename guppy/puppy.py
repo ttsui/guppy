@@ -49,7 +49,7 @@ class Puppy:
 		return
 
 	def getDiskSpace(self):
-		args = '-c size'
+		args = ['-c', 'size']
 
 		output_file = self._execute(args)
 
@@ -81,9 +81,9 @@ class Puppy:
 
 		
 	def listDir(self, path=None):
-		args = '-c dir'
+		args = ['-c', 'dir']
 		if path != None:
-			args += " '" + path + "'"
+			args.append(path)
 			
 		output_file = self._execute(args)
 
@@ -110,11 +110,11 @@ class Puppy:
 		
 		# FIXME: Can getFile() be merged with putFile()
 	def getFile(self, src_file, dest_file=None):
-		args = '-c get' + ' "' + src_file + '"'
+		args = ['-c', 'get', src_file]
 		if dest_file != None:
-			args += " '" + dest_file + "'"
+			args.append(dest_file)
 		else:
-			args += " '" + os.path.basename(src_file) + "'"
+			args.append(os.path.basename(src_file))
 			
 		self.progress_output = self._execute(args)
 
@@ -125,11 +125,11 @@ class Puppy:
 		return
 
 	def putFile(self, src_file, dest_file=None):
-		args = '-c put' + ' "' + src_file + '"'
+		args = ['-c', 'put', src_file]
 		if dest_file != None:
-			args += " '" + dest_file + "'"
+			args.append(dest_file)
 		else:
-			args += " '" + os.path.basename(src_file) + "'"
+			args.append(os.path.basename(src_file))
 			
 		self.progress_output = self._execute(args)
 		
@@ -140,7 +140,7 @@ class Puppy:
 		return
 
 	def makeDir(self, dirname):
-		args = '-c mkdir' + ' ' + dirname
+		args = ['-c', 'mkdir', dirname]
 			
 		output_file = self._execute(args)
 
@@ -155,7 +155,7 @@ class Puppy:
 		return
 
 	def rename(self, old_name, new_name):
-		args = '-c rename' + ' ' + old_name + ' ' + new_name
+		args = ['-c', 'rename', old_name, new_name]
 			
 		output_file = self._execute(args)
 
@@ -170,7 +170,7 @@ class Puppy:
 		return
 
 	def delete(self, filename):
-		args = '-c delete' + ' ' + filename
+		args = ['-c', 'delete', filename]
 			
 		output_file = self._execute(args)
 
@@ -237,7 +237,7 @@ class Puppy:
 		return status
 		
 	def setTurbo(self, value):
-		args = '-c turbo'
+		args = ['-c', 'turbo']
 			
 		if value == True:
 			args += ' 1'
@@ -255,7 +255,7 @@ class Puppy:
 		return
 			
 	def reset(self):	
-		args = '-c cancel'
+		args = ['-c', 'cancel']
 			
 		output_file = self._execute(args)
 
@@ -280,8 +280,8 @@ class Puppy:
 	
 		return result
 		
-	def _execute(self, args):
-		cmd = self.cmd + ' ' + args
+	def _execute(self, args_list):
+		cmd = [ self.cmd ] + args_list
 		
 		if DEBUG:
 			print 'cmd = ', cmd
