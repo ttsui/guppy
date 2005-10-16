@@ -24,6 +24,7 @@ import Queue
 import gtk
 import gtk.glade
 import gobject
+import pango
 
 import locale
 import gettext
@@ -218,6 +219,8 @@ class GuppyWindow:
 			treeview.set_data('changed_handler_id', handler_id)
 			
 			text_cell = gtk.CellRendererText()
+			text_cell.set_property('ellipsize', pango.ELLIPSIZE_END)
+			text_cell.set_property('ellipsize-set', True)
 			pixb_cell = gtk.CellRendererPixbuf()
 			
 			col = gtk.TreeViewColumn(_('Name'))
@@ -226,18 +229,21 @@ class GuppyWindow:
 			col.set_attributes(text_cell, text=FileSystemModel.NAME_COL)
 			col.set_attributes(pixb_cell, stock_id=FileSystemModel.ICON_COL)
 			col.set_clickable(True)
+			col.set_resizable(True)
 			col.set_sort_indicator(True)
+			col.set_expand(True)
 			col.set_sort_column_id(FileSystemModel.NAME_COL)
 			treeview.append_column(col)
 			liststore.set_sort_func(FileSystemModel.NAME_COL, sort_func, FileSystemModel.NAME_COL)
 						
+			text_cell = gtk.CellRendererText()
 			col = gtk.TreeViewColumn(_('Date'), text_cell, text=FileSystemModel.DATE_COL)
 			col.set_clickable(True)
 			col.set_sort_indicator(True)
 			col.set_sort_column_id(FileSystemModel.DATE_COL)
 			treeview.append_column(col)
 			liststore.set_sort_func(FileSystemModel.DATE_COL, sort_func, FileSystemModel.DATE_COL)
-				
+
 			col = gtk.TreeViewColumn(_('Size'), text_cell, text=FileSystemModel.SIZE_COL)
 			col.set_clickable(True)
 			col.set_sort_indicator(True)
