@@ -1,3 +1,15 @@
+guppy-0.0.5:
+	- New PathBar widget to replace path entry text field.
+	  (Requires PyGtk - 2.8.x)
+	- Quit Guppy after all transfer complete. Useful to chain up with
+	  poweroff command to shutdown your PC after your file transfers are
+	  complete.
+	- New keyboard accelerators to jump to PC/PVR path entry text field.
+
+guppy-0.0.4: 6 Oct 2005
+	- Support for Puppy 1.11.
+	- Add keyboard accelerators for common actions, e.g. Download, Upload.
+
 guppy-0.0.3: 20 Sep 2005
 	- Add support for changing directories during a file transfer.
 	- Update button labels on file overwrite dialog.
