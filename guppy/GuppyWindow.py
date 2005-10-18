@@ -134,6 +134,9 @@ class GuppyWindow:
 	
 		self.turbo = False
 		
+		self.last_file_transfer = None
+		self.quit_after_transfer = False
+		
 	def initUIManager(self):
 		self.uimanager = gtk.UIManager()
 				
@@ -151,6 +154,7 @@ class GuppyWindow:
 			                         
 		# FIXME: Use a proper icon for Turbo button
 		actiongroup.add_toggle_actions([('Turbo', gtk.STOCK_EXECUTE, _('Tur_bo'), '<Ctrl>t', _('Turbo Transfer'), self.on_turbo_toggled),
+									    ('QuitAfterTransfer', None, _('Quit After Transfer'), None, None, self.on_quit_after_transfer),
 		                                ('ShowHidden', None, _('Show Hidden Files'), None, _('Show hidden files'), self.on_show_hidden_toggled),
 		                                ('ShowFileTransfer', None, _('Show File Transfer'), None, _('Show File Transfer'), self.on_show_file_transfer_toggled)])
 
@@ -352,6 +356,16 @@ class GuppyWindow:
 		# We don't call gtk.main_quit() here because the TransferThread may try
 		# to call some gtk functions. Instead if the TransferThread gets the
 		# QUIT_CMD from the transfer queue it will call gtk.main_quit().
+
+	def on_quit_after_transfer(self, widget, data=None):
+		if self.quit_after_transfer:
+			self.quit_after_transfer = False
+			if self.last_file_transfer != None and self.last_file_transfer.isAlive():
+				self.last_file_transfer.setQuitAfterTransfer(False)
+		else:
+			self.quit_after_transfer = True
+			if self.last_file_transfer != None and self.last_file_transfer.isAlive():
+				self.last_file_transfer.setQuitAfterTransfer(True)
 				
 	def on_show_file_transfer_toggled(self, widget, data=None):
 		transfer_frame = self.glade_xml.get_widget('transfer_frame')
@@ -444,7 +458,10 @@ class GuppyWindow:
 		progress_box = file_transfer.xml.get_widget('progress_box')
 		progress_box.destroy()
 
-	def on_transfer_stop_btn_clicked(self, widget, data=None):
+	def on_transfer_stop_btn_clicked(self, widget, file_transfer):
+		# Don't quit if user explicitly stopped the transfer the last transfer
+		if file_transfer == self.last_file_transfer:
+			self.last_file_transfer.setQuitAfterTransfer(False)
 		self.puppy.cancelTransfer()
 
 	def on_upload_btn_clicked(self, widget, data=None):
@@ -540,6 +557,8 @@ class GuppyWindow:
 			# Connect transfer instance remove button signal handler
 			remove_btn = xml.get_widget('transfer_remove_button')
 			remove_btn.connect('clicked', self.on_transfer_remove_btn_clicked, file_transfer)
+			stop_btn = xml.get_widget('transfer_stop_button')
+			stop_btn.connect('clicked', self.on_transfer_stop_btn_clicked, file_transfer)
 
 			if file_exists:
 				existing_files.append(file_transfer)
@@ -547,6 +566,9 @@ class GuppyWindow:
 				queue_box.pack_start(progress_box, expand=False)
 				self.transfer_queue.put(file_transfer, True, None)
 
+		old_last_file_transfer = self.last_file_transfer
+		self.last_file_transfer = file_transfer
+		
 		# Confirm with user that they wish to overwrite existing files
 		replace_all = False
 		for file in existing_files:
@@ -572,6 +594,13 @@ class GuppyWindow:
 			progress_box = file.xml.get_widget('progress_box')
 			queue_box.pack_start(progress_box, expand=False)
 			self.transfer_queue.put(file, True, None)
+			self.last_file_transfer = file
+
+		if self.quit_after_transfer:
+			if old_last_file_transfer:
+				old_last_file_transfer.setQuitAfterTransfer(False)
+			
+			self.last_file_transfer.setQuitAfterTransfer(True)
 
 	def updateFreeSpace(self, fs_model=None):			
 		'''Update label showing free space available on each file system.
@@ -639,6 +668,7 @@ class FileTransfer:
 		self.xml = xml
 		
 		self.alive = True
+		self.quit_after_transfer = False
 	
 	def isAlive(self):
 		return self.alive
@@ -648,6 +678,12 @@ class FileTransfer:
 	
 	def complete(self):
 		self.alive = False
+		
+	def getQuitAfterTransfer(self):
+		return self.quit_after_transfer
+	
+	def setQuitAfterTransfer(self, value):
+		self.quit_after_transfer = value
 		
 class TransferThread(threading.Thread):
 	NUM_OF_RESET_ATTEMPTS = 6
@@ -794,6 +830,12 @@ class TransferThread(threading.Thread):
 			
 			# Put on queue for completed transfers
 			self.complete_queue.put(file_transfer)
+			
+			if file_transfer.getQuitAfterTransfer():
+				gtk.gdk.threads_enter()
+				self.guppy.reallyQuit()
+				gtk.gdk.threads_leave()
+				return
 
 class PathBar(gtk.Container):
 	__gtype_name__ = 'PathBar'

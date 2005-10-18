@@ -19,6 +19,7 @@
 <ui>
 	<menubar name="MenuBar">
 		<menu action="File">
+			<menuitem action="QuitAfterTransfer"/>
 			<menuitem action="Quit"/>
 		</menu>
 		<menu action="View">

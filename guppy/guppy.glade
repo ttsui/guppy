@@ -758,7 +758,6 @@
 	      <property name="use_stock">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
-	      <signal name="clicked" handler="on_transfer_stop_btn_clicked" last_modification_time="Sat, 03 Sep 2005 05:53:02 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="padding">0</property>
