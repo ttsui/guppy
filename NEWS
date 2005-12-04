@@ -1,10 +1,14 @@
-guppy-0.0.5:
-	- New PathBar widget to replace path entry text field.
-	  (Requires PyGtk - 2.8.x)
-	- Quit Guppy after all transfer complete. Useful to chain up with
-	  poweroff command to shutdown your PC after your file transfers are
-	  complete.
+guppy-0.0.5: 20 Oct 2005
+	- New PathBar widget
+	     o The PathBar widget replaces the path entry text field. It is
+	       only available if PyGtk version 2.8.x is installed. Otherwise,
+	       the old path entry text field is used.
+	- New option to quit Guppy after all transfer complete.
+	     o This option is useful when chained up with the poweroff command
+	       to shutdown your PC after your file transfers are complete.
 	- New keyboard accelerators to jump to PC/PVR path entry text field.
+             o CTRL+k - To activate PVR path entry text field.
+             o CTRL+l  - To activate PC path entry text field.
 
 guppy-0.0.4: 6 Oct 2005
 	- Support for Puppy 1.11.
