@@ -19,18 +19,35 @@ Python 2.4 - http://python.org
 PyGtk  2.6 - http://pygtk.org
 
 
+Installing Guppy
+================
+1. You can install guppy with the following command
+	$ cd guppy-0.0.5/guppy
+	$ python setup.py install --prefix <INSTALL PREFIX>
+<INSTALL PREFIX> is the location where you wish to install Guppy, e.g. /usr
+
+
+Note: You can also running Guppy without installing it.
+1. Go into the guppy directory and run Guppy.
+	$ cd guppy-0.0.5/guppy
+	$ ./guppy
+
+
 Running Guppy
 =============
 1. Make sure puppy is in your PATH. Do the following to check.
 	$ which puppy
 
-2. Go into the guppy directory and run Guppy.
-	$ cd guppy-0.0.1
-	$ ./guppy.py
+2. You will most likely need root access to run Guppy because you need
+permission to access the USB device at /proc/bus/usb/001/003.
+	$ su -
+
+3. Start Guppy
+	$ guppy
 
 Contact
 =======
 
-Homepage: http://home.exetel.com.au/ttsui/guppy/
+Homepage: http://guppy.nongnu.org
 
-Report any bugs or contributions to tsui.tony@gmail.com.
+Report any bugs or contributions to tsui.tony@gmail.com
