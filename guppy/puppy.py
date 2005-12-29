@@ -240,9 +240,9 @@ class Puppy:
 		args = ['-c', 'turbo']
 			
 		if value == True:
-			args += ' 1'
+			args += '1'
 		else:
-			args += ' 0'
+			args += '0'
 			
 		output_file = self._execute(args)
 
