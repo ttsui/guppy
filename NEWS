@@ -1,3 +1,7 @@
+guppy-0.0.6: 30 Dec 2005
+	- Fix turbo mode.
+	- Update README.
+
 guppy-0.0.5: 20 Oct 2005
 	- New PathBar widget
 	     o The PathBar widget replaces the path entry text field. It is
