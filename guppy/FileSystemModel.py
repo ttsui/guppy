@@ -205,7 +205,11 @@ class PCFileSystemModel(FileSystemModel):
 
 		# Skip Headers
 		pipe.readline()
-		output = pipe.readline().split()
+
+		output = pipe.read()
+		# Collapse multiple lines into single line so we can split.
+		output = output.replace('\n', ' ')
+		output = output.split()
 
 		exit_stat = pipe.close()
 		if exit_stat != None and os.WEXITSTATUS(exit_stat) != 0:
