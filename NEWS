@@ -1,3 +1,6 @@
+guppy-0.0.6.1: 7 Jan 2006
+	- Handle multiple lines from "df" output.
+
 guppy-0.0.6: 30 Dec 2005
 	- Fix turbo mode.
 	- Update README.
