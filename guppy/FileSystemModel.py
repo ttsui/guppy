@@ -200,7 +200,7 @@ class PCFileSystemModel(FileSystemModel):
 			self.append(entry)
 
 	def freeSpace(self):
-		cmd = 'df ' + '"' + self.current_dir + '"'
+		cmd = 'df -P ' + '"' + self.current_dir + '"'
 		pipe = os.popen(cmd)
 
 		# Skip Headers
