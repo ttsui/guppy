@@ -24,9 +24,24 @@ import os
 import signal
 import fcntl
 
+FAIL_START    = False
+FAIL_TRANSFER = False
+FAIL_LIST     = False
+FAIL_SIZE     = True
+
+DOWNLOAD_RATE = 10
+
 SLOW_LISTDIR = False
 
 DATA_DIR='/local/devel/guppy/testing/'
+
+def check_fail(fail, fail_msg):
+	if fail:
+		print fail_msg
+		sys.exit(1)
+
+
+check_fail(FAIL_START, 'FAIL_START')
 
 lock_filename =  '/tmp/' + os.path.basename(sys.argv[0])
 
@@ -57,6 +72,8 @@ for opt, optarg in opts:
 			size = True
 
 if transfer:
+	check_fail(FAIL_TRANSFER, 'FAIL_TRANSFER')
+
 	if len(args) != 2:
 		print 'ERROR: Insufficent arguments for transfer command'
 		sys.exit(1)
@@ -66,7 +83,7 @@ if transfer:
 
 	file = open(dst, 'w')
 
-	inc = 5
+	inc = DOWNLOAD_RATE
 	percent = 0.0
 	for i in xrange(100/inc):
 		percent = percent + inc
@@ -79,6 +96,8 @@ if transfer:
 	file.close()
 	print
 elif listdir:
+	check_fail(FAIL_LIST, 'FAIL_LIST')
+
 	dir = ''
 	if len(args) > 0 and len(args[0]):
 		if args[0][0] != '\\':
@@ -92,6 +111,7 @@ elif listdir:
 	if SLOW_LISTDIR:
 		time.sleep(0.5)
 elif size:
+	check_fail(FAIL_SIZE, 'FAIL_SIZE')
 	print 'Total %10u kiB %7u MiB %4u GiB' % (0, 0, 120)
 	print 'Free  %10u kiB %7u MiB %4u GiB' % (0, 500, 0)
 elif cancel:

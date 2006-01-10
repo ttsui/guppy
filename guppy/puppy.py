@@ -15,6 +15,8 @@
 ## along with this program; if not, write to the Free Software
 ## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
+import sys
+import inspect
 import os
 import popen2
 import signal
@@ -48,6 +50,13 @@ class Puppy:
 		
 		return
 
+	def exists(self):
+		for path in os.environ['PATH'].split(':'):
+			if len(path) > 0 and os.access(path + '/puppy', os.F_OK):
+				return True
+			
+		return False
+		
 	def getDiskSpace(self):
 		args = ['-c', 'size']
 
@@ -57,7 +66,7 @@ class Puppy:
 		output_file.close()
 
 		if self.getStatus() != 0:
-			raise PuppyError("getDiskSpace() failed. puppy returned: " + str(output))
+			self._handleErrorOuput(output)
 
 		# Skip Total size line
 		total = float(output[0].split()[5]) * 1024 * 1024 * 1024
@@ -79,7 +88,6 @@ class Puppy:
 
 		return total, free_space
 
-		
 	def listDir(self, path=None):
 		args = ['-c', 'dir']
 		if path != None:
@@ -90,6 +98,12 @@ class Puppy:
 		output = output_file.readlines()
 		output_file.close()
 
+		status = self.getStatus()	
+		if status == Puppy.E_GLOBAL_LOCK:
+			raise PuppyBusyError(str(output))
+		elif status != 0:
+			self._handleErrorOuput(output)
+		
 		listing = []
 		# Parse output of output_file and return it as a list
 		for line in output:
@@ -100,15 +114,9 @@ class Puppy:
 			         entry[1] ]
 			listing.append(item)
 		
-		status = self.getStatus()	
-		if status == Puppy.E_GLOBAL_LOCK:
-			raise PuppyBusyError(str(output))
-		elif status != 0:
-			raise PuppyError("listDir failed. puppy returned: " + str(output))
-		
 		return listing
 		
-		# FIXME: Can getFile() be merged with putFile()
+	# FIXME: Can getFile() be merged with putFile()
 	def getFile(self, src_file, dest_file=None):
 		args = ['-c', 'get', src_file]
 		if dest_file != None:
@@ -119,9 +127,10 @@ class Puppy:
 		self.progress_output = self._execute(args)
 
 		status = self.getStatus(wait=False)
+		print 'status = ', status
 		if status != 0 and status != -1:
-			raise PuppyError("getFile failed. puppy returned: " + str(self.progress_output))
-
+			self._handleErrorOuput(self.progress_output)
+			
 		return
 
 	def putFile(self, src_file, dest_file=None):
@@ -135,7 +144,7 @@ class Puppy:
 		
 		status = self.getStatus(wait=False)
 		if status != 0 and status != -1:
-			raise PuppyError("putFile failed. puppy returned: " + str(self.progress_output))
+			self._handleErrorOuput(self.progress_output)
 			
 		return
 
@@ -150,7 +159,7 @@ class Puppy:
 		# Parse output of output_file and return it as a list
 		
 		if self.getStatus() != 0:
-			raise PuppyError("makeDir failed. puppy returned: " + str(output))
+			self._handleErrorOuput(output)
 		
 		return
 
@@ -165,7 +174,7 @@ class Puppy:
 		# Parse output of output_file and return it as a list
 		
 		if self.getStatus() != 0:
-			raise PuppyError("rename failed. puppy returned: " + str(output))
+			self._handleErrorOuput(output)
 		
 		return
 
@@ -180,12 +189,13 @@ class Puppy:
 		# Parse output of output_file and return it as a list
 		
 		if self.getStatus() != 0:
-			raise PuppyError("delete failed. puppy returned: " + str(output))
+			self._handleErrorOuput(output)
 		
 		return
 
 	def getProgress(self):
 		exit_status = self.getStatus(wait=False)
+		
 		# exit_status of -1 means process is still alive
 		if exit_status != -1:
 			# Raise exception if puppy did not exit successfully or because of
@@ -212,7 +222,10 @@ class Puppy:
 		
 		if len(tokens) != 4:
 			# Reap child process
-			self.getStatus()
+			exit_status = self.getStatus()
+			if exit_status != 0 and exit_status != 15:
+				self._handleErrorOuput(line)
+			
 			return None, None, None
 
 		percent = tokens[0][:tokens[0].rindex('%')]
@@ -250,7 +263,7 @@ class Puppy:
 		output_file.close()
 		
 		if self.getStatus() != 0:
-			raise PuppyError("setTurbo failed. puppy returned: " + str(output))
+			self._handleErrorOuput(output)
 		
 		return
 			
@@ -302,15 +315,42 @@ class Puppy:
 			
 		return self.popen_obj.fromchild
 
+	def _handleErrorOuput(self, output):
+		"""Parse puppy error message and raise appropriate exception.
+		
+		"""
+		caller = sys._getframe(1)
+		try:
+			func_name = inspect.getframeinfo(caller)[2]
+		finally:
+			del caller
+
+		errmsg = ' '.join(output)
+		msg = func_name + '(): ' + errmsg
+		
+		if errmsg == 'ERROR: Can not autodetect a Topfield TF5000PVRt\n':
+			raise PuppyNoPVRError(msg)
+		else:
+			raise PuppyError(msg)
+		
 class PuppyError(Exception):
 	def __init__(self, value):
 		self.value = value
 	def __str__(self):
 		return repr(self.value)
 
-class PuppyBusyError(Exception):
+class PuppyBusyError(PuppyError):
+	"""Exception raised for when another instance of Puppy is running.
+	
+	"""
+	def __init__(self, value):	
+		PuppyError.__init__(self, value)
+
+class PuppyNoPVRError(PuppyError):
+	"""Excpetion raised when no PVR is detected.
+	
+	"""
 	def __init__(self, value):
-		self.value = value
-	def __str__(self):
-		return repr(self.value)
+		msg = _('PVR not connected. Please check that your computer is connected to the PVR.')
+		PuppyError.__init__(self, msg)
 	

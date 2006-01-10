@@ -29,7 +29,7 @@ import pango
 import locale
 import gettext
 
-import puppy
+from puppy import *
 from FileSystemModel import *
 from util import *
 from about import *
@@ -70,7 +70,7 @@ class GuppyWindow:
 		window = self.glade_xml.get_widget('guppy_window')
 		window.add_accel_group(accelgroup)
 		
-		self.puppy = puppy.Puppy()
+		self.puppy = Puppy()
 		
 		self.show_hidden = False
 
@@ -87,8 +87,6 @@ class GuppyWindow:
 
 		self.pvr_model = PVRFileSystemModel(show_parent_dir)
 		self.pc_model = PCFileSystemModel(show_parent_dir)
-		
-		self.updateFreeSpace()
 		
 		self.pc_path_entry_box = self.glade_xml.get_widget('pc_path_entry_box')
 		self.pvr_path_entry_box = self.glade_xml.get_widget('pvr_path_entry_box')
@@ -273,6 +271,20 @@ class GuppyWindow:
 	
 	def run(self):
 		self.createFileTrees()
+		
+		if not self.puppy.exists():
+			dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+			                           buttons=gtk.BUTTONS_OK)
+			dialog.set_markup(_('''Guppy can not run because the program Puppy is not available. Please install Puppy.
+
+You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
+
+			response = dialog.run()
+			dialog.destroy()
+			return
+
+		self.update_screen_info()
+		
 		gtk.gdk.threads_enter()
 		gtk.main()
 		gtk.gdk.threads_leave()
@@ -608,8 +620,13 @@ class GuppyWindow:
 		fs_model  Model to update free space. Default is None which updates both
 		          file system.
 		'''
-		if fs_model == self.pvr_model or fs_model == None:
-			self.pvr_free_space_label.set_text(_('Free Space') + ': ' + self.pvr_model.freeSpace())
+		try:
+			if fs_model == self.pvr_model or fs_model == None:
+				self.pvr_free_space_label.set_text(_('Free Space') + ': ' + self.pvr_model.freeSpace())
+		except PuppyError, error:
+			print 'updateFreeSpace(); ERROR = ', error
+			# TODO: Update ERROR UI
+			pass
 			
 		if fs_model == self.pc_model or fs_model == None:
 			self.pc_free_space_label.set_text(_('Free Space') + ': ' + self.pc_model.freeSpace())
@@ -650,7 +667,12 @@ class GuppyWindow:
 			selection.handler_block(handler_id)
 			# Update PVR file system cache
 			if isinstance(model, PVRFileSystemModel):
-				model.updateCache()
+				try:
+					model.updateCache()
+				except PuppyError, error:
+					print 'updateTreeViews(): Error = ', error
+					# TODO: Set error indicator in UI
+					pass
 			model.changeDir()
 			selection.handler_unblock(handler_id)
 			
@@ -755,7 +777,7 @@ class TransferThread(threading.Thread):
 			while percent != None:
 				try:
 					percent, speed, time = self.guppy.puppy.getProgress()
-				except puppy.PuppyError:
+				except PuppyError:
 					# Quit trying to transfer file after a certain number of attempts
 					if transfer_attempt > TransferThread.NUM_OF_TRANSFER_ATTEMPTS:
 						transfer_successful = False

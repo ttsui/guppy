@@ -153,8 +153,6 @@ class PCFileSystemModel(FileSystemModel):
 		# FIXME: Get dir from when Guppy last exited
 		self.current_dir = os.environ['HOME']
 		
-		self.changeDir()
-		
 	def changeDir(self, dir=None):
 		if dir:
 			if dir[0] != '/':
@@ -232,13 +230,6 @@ class PVRFileSystemModel(FileSystemModel):
 		self.dir_tree_lock = threading.Lock()
 
 		self.dir_tree = None
-		self.updateCache()
-		
-		# The cache may not have been updated because puppy was busy. Try again.
-		if self.dir_tree == None:
-			self.updateCache()
-					
-		self.changeDir()
 
 	def changeDir(self, dir=None):
 		"""Change directory and update model data accordingly.
@@ -312,7 +303,7 @@ class PVRFileSystemModel(FileSystemModel):
 		try:
 			total, free = self.puppy.getDiskSpace()
 			self.freespace = free
-		except:
+		except puppy.PuppyBusyError:
 			pass
 
 		return humanReadableSize(self.freespace)

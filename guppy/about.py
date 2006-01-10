@@ -16,7 +16,7 @@
 ## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 APP_NAME = 'Guppy'
-VERSION = '0.0.6'
+VERSION = '0.0.7'
 DESCRIPTION='Topfield PVR File Downloader'
 AUTHOR = 'Tony Tsui'
 AUTHOR_EMAIL = 'tsui.tony@gmail.com'
