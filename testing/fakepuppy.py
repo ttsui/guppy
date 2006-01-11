@@ -27,7 +27,7 @@ import fcntl
 FAIL_START    = False
 FAIL_TRANSFER = False
 FAIL_LIST     = False
-FAIL_SIZE     = True
+FAIL_SIZE     = False
 
 DOWNLOAD_RATE = 10
 

@@ -20,6 +20,7 @@ import os
 import stat
 import threading
 import Queue
+import datetime
 
 import gtk
 import gtk.glade
@@ -69,11 +70,13 @@ class GuppyWindow:
 		accelgroup = self.uimanager.get_accel_group()
 		window = self.glade_xml.get_widget('guppy_window')
 		window.add_accel_group(accelgroup)
-		
+
 		self.puppy = Puppy()
 		
 		self.show_hidden = False
 
+		self.pvr_error_btn = self.glade_xml.get_widget('pvr_error_btn')
+		
 		self.pvr_total_size_label = self.glade_xml.get_widget('pvr_total_size_label')
 		self.pvr_free_space_label = self.glade_xml.get_widget('pvr_free_space_label')
 
@@ -347,6 +350,17 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 				self.pvr_path_entry_box.hide()
 				self.pvr_path_bar.setPath(path)
 				self.pvr_path_bar.show()
+		
+	def on_pvr_error_btn_clicked(self, widget, data=None):
+		# TODO: Open error dialog
+		error_window = self.glade_xml.get_widget('pvr_error_window')
+		error_window.show()
+		widget.hide()
+	
+	def on_pvr_error_window_close(self, widget, event=None, data=None):
+		error_window = self.glade_xml.get_widget('pvr_error_window')
+		error_window.hide()
+		return True
 		
 	def on_quit(self, widget, data=None):
 		# Empty out transfer queue so the TransferThread can't get another
@@ -626,10 +640,25 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		except PuppyError, error:
 			print 'updateFreeSpace(); ERROR = ', error
 			# TODO: Update ERROR UI
+			self.pvr_error_btn.show()
+			self.addError(_('Can get free space on PVR'))
 			pass
 			
 		if fs_model == self.pc_model or fs_model == None:
 			self.pc_free_space_label.set_text(_('Free Space') + ': ' + self.pc_model.freeSpace())
+
+	def addError(self, msg):
+		xml = gtk.glade.XML(self.glade_file, 'pvr_error_box')
+		error_box = xml.get_widget('pvr_error_box')
+		error_label = xml.get_widget('pvr_error_label')
+
+		error_msg = _('ERROR') + ': ' + datetime.datetime.now().strftime('%a %b %d, %I:%M %p') +'\n'
+		error_msg += '<b>' + msg + '</b>'
+		error_label.set_markup(error_msg)
+
+		pvr_error_vbox = self.glade_xml.get_widget('pvr_error_vbox')
+		pvr_error_vbox.pack_start(error_box, expand=False)
+		pvr_error_vbox.show_all()
 
 	def updatePathBar(self, fs_model):
 		'''Update the buttons of the path bar for each file system.
@@ -672,7 +701,10 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 				except PuppyError, error:
 					print 'updateTreeViews(): Error = ', error
 					# TODO: Set error indicator in UI
+					self.pvr_error_btn.show()
+					self.addError(_('Can get list of files on PVR'))
 					pass
+
 			model.changeDir()
 			selection.handler_unblock(handler_id)
 			

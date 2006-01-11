@@ -25,7 +25,7 @@ import threading
 import gtk
 import gobject
 
-import puppy
+from puppy import *
 from util import *
 
 # Set to True for debug output
@@ -225,7 +225,7 @@ class PVRFileSystemModel(FileSystemModel):
 
 		self.freespace = 0
 				
-		self.puppy = puppy.Puppy()
+		self.puppy = Puppy()
 
 		self.dir_tree_lock = threading.Lock()
 
@@ -254,9 +254,11 @@ class PVRFileSystemModel(FileSystemModel):
 			dir = norm_path.replace('/', '\\')
 
 		dir_node = self.findDirectory(dir)
+		if dir_node == None:
+			return
 		
 		self.current_dir = dir
-		
+
 		# Clear model
 		if len(self) > 0:
 			self.clear()
@@ -303,7 +305,7 @@ class PVRFileSystemModel(FileSystemModel):
 		try:
 			total, free = self.puppy.getDiskSpace()
 			self.freespace = free
-		except puppy.PuppyBusyError:
+		except PuppyBusyError:
 			pass
 
 		return humanReadableSize(self.freespace)
@@ -344,10 +346,13 @@ class PVRFileSystemModel(FileSystemModel):
 		for i in xrange(2):
 			try:
 				new_dir_tree = self.scanDirectory('')
-			except puppy.PuppyBusyError:
+			except PuppyBusyError:
 				print 'updateCache(): Exception: PuppyBusyError'
 				# Sleep for 1 second before trying again
 				time.sleep(1)
+			except PuppyError:
+				self.dir_tree_lock.release()
+				raise
 
 		# Failed to update cache. Use existing cache.
 		if new_dir_tree == None:
