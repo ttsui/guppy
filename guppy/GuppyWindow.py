@@ -57,7 +57,9 @@ class GuppyWindow:
 		# Find out proper way to find glade files
 		self.glade_file = self.datadir + '/' + 'guppy.glade'
 
-		self.initUIManager()		
+		self.pvr_error_window = PVRErrorWindow(self.glade_file)
+		
+		self.initUIManager()
 
 		gtk.glade.set_custom_handler(self.customWidgetHandler)
 
@@ -65,7 +67,7 @@ class GuppyWindow:
 		self.glade_xml = gtk.glade.XML(self.glade_file, None, gettext.textdomain())
 		
 		# Connect callback functions in glade file to functions
-		self.glade_xml.signal_autoconnect(self)		
+		self.glade_xml.signal_autoconnect(self)
 		
 		accelgroup = self.uimanager.get_accel_group()
 		window = self.glade_xml.get_widget('guppy_window')
@@ -353,15 +355,9 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		
 	def on_pvr_error_btn_clicked(self, widget, data=None):
 		# TODO: Open error dialog
-		error_window = self.glade_xml.get_widget('pvr_error_window')
-		error_window.show()
+		self.pvr_error_window.show()
 		widget.hide()
 	
-	def on_pvr_error_window_close(self, widget, event=None, data=None):
-		error_window = self.glade_xml.get_widget('pvr_error_window')
-		error_window.hide()
-		return True
-		
 	def on_quit(self, widget, data=None):
 		# Empty out transfer queue so the TransferThread can't get another
 		# FileTransfer object after we cancel the current transfer.
@@ -639,26 +635,12 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 				self.pvr_free_space_label.set_text(_('Free Space') + ': ' + self.pvr_model.freeSpace())
 		except PuppyError, error:
 			print 'updateFreeSpace(); ERROR = ', error
-			# TODO: Update ERROR UI
 			self.pvr_error_btn.show()
-			self.addError(_('Can get free space on PVR'))
+			self.pvr_error_window.addError(_('Failed to get free disk space on PVR'))
 			pass
 			
 		if fs_model == self.pc_model or fs_model == None:
 			self.pc_free_space_label.set_text(_('Free Space') + ': ' + self.pc_model.freeSpace())
-
-	def addError(self, msg):
-		xml = gtk.glade.XML(self.glade_file, 'pvr_error_box')
-		error_box = xml.get_widget('pvr_error_box')
-		error_label = xml.get_widget('pvr_error_label')
-
-		error_msg = _('ERROR') + ': ' + datetime.datetime.now().strftime('%a %b %d, %I:%M %p') +'\n'
-		error_msg += '<b>' + msg + '</b>'
-		error_label.set_markup(error_msg)
-
-		pvr_error_vbox = self.glade_xml.get_widget('pvr_error_vbox')
-		pvr_error_vbox.pack_start(error_box, expand=False)
-		pvr_error_vbox.show_all()
 
 	def updatePathBar(self, fs_model):
 		'''Update the buttons of the path bar for each file system.
@@ -700,9 +682,8 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 					model.updateCache()
 				except PuppyError, error:
 					print 'updateTreeViews(): Error = ', error
-					# TODO: Set error indicator in UI
 					self.pvr_error_btn.show()
-					self.addError(_('Can get list of files on PVR'))
+					self.pvr_error_window.addError(_('Failed to get list of files on PVR'))
 					pass
 
 			model.changeDir()
@@ -713,7 +694,39 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 				selection.select_path(path)
 
 
+class PVRErrorWindow:
+	def __init__(self, glade_file):
+		glade_xml = gtk.glade.XML(glade_file, 'pvr_error_window')
+		# Connect callback functions in glade file to functions
+		glade_xml.signal_autoconnect(self)
+
+		self.glade_file = glade_file		
+		self.error_window = glade_xml.get_widget('pvr_error_window')
+		self.pvr_error_vbox = glade_xml.get_widget('pvr_error_vbox')
 		
+	def addError(self, msg):
+		xml = gtk.glade.XML(self.glade_file, 'pvr_error_box')
+		error_box = xml.get_widget('pvr_error_box')
+		error_label = xml.get_widget('pvr_error_label')
+
+		error_msg = _('ERROR') + ': ' + datetime.datetime.now().strftime('%a %b %d, %I:%M %p') +'\n'
+		error_msg += '<b>' + msg + '</b>'
+		error_label.set_markup(error_msg)
+
+		self.pvr_error_vbox.pack_start(error_box, expand=False)
+		self.pvr_error_vbox.show_all()
+		
+	def on_pvr_error_window_clear(self, widget, data=None):
+		for child in self.pvr_error_vbox:
+			child.destroy()
+
+	def on_pvr_error_window_close(self, widget, event=None, data=None):
+		self.error_window.hide()
+		return True
+		
+	def show(self):
+		self.error_window.show()
+
 class FileTransfer:
 	def __init__(self, direction, src, dst, xml):
 		self.direction = direction
