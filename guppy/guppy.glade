@@ -974,7 +974,7 @@
 </widget>
 
 <widget class="GtkWindow" id="pvr_error_window">
-  <property name="title" translatable="yes">window1</property>
+  <property name="title" translatable="yes">PVR Error Window</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_NONE</property>
   <property name="modal">False</property>

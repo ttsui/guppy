@@ -25,11 +25,11 @@ import signal
 import fcntl
 
 FAIL_START    = False
-FAIL_TRANSFER = False
+FAIL_TRANSFER = True
 FAIL_LIST     = False
-FAIL_SIZE     = False
+FAIL_SIZE     = True
 
-DOWNLOAD_RATE = 10
+DOWNLOAD_RATE = 50
 
 SLOW_LISTDIR = False
 
@@ -111,7 +111,9 @@ elif listdir:
 	if SLOW_LISTDIR:
 		time.sleep(0.5)
 elif size:
-	check_fail(FAIL_SIZE, 'FAIL_SIZE')
+	check_fail(FAIL_SIZE, '''FAIL_SIZE. (12:09:25) tonyt: btw are you happy with
+	the case, i.e. the supposed noise reduction?
+	(12:09:41) interalia: at this stage I havent decided''')
 	print 'Total %10u kiB %7u MiB %4u GiB' % (0, 0, 120)
 	print 'Free  %10u kiB %7u MiB %4u GiB' % (0, 500, 0)
 elif cancel:
