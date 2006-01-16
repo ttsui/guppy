@@ -120,7 +120,7 @@ class GuppyWindow:
 			self.updatePathBar(self.pc_model)
 		
 		# Timer to update screen info
-		gobject.timeout_add(GuppyWindow.SCREEN_INFO_UPDATE_INTERVAL, self.update_screen_info)
+		gobject.timeout_add(GuppyWindow.SCREEN_INFO_UPDATE_INTERVAL, self.updateScreenInfo)
 		
 		# Queue to put files to be transferred. The transfer thread gets files
 		# to transfer from this queue.
@@ -288,7 +288,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			dialog.destroy()
 			return
 
-		self.update_screen_info()
+		self.updateScreenInfo()
 		
 		gtk.gdk.threads_enter()
 		gtk.main()
@@ -633,6 +633,8 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		try:
 			if fs_model == self.pvr_model or fs_model == None:
 				self.pvr_free_space_label.set_text(_('Free Space') + ': ' + self.pvr_model.freeSpace())
+		except PuppyNoPVRError:
+			raise
 		except PuppyError, error:
 			self.pvr_error_btn.show()
 			self.pvr_error_window.addError(_('Failed to get free disk space on PVR'), error)
@@ -655,12 +657,18 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		else:
 			self.pc_path_bar.setPath(fs_model.getCWD())
 	
-	def update_screen_info(self):
-		# Update amount of free space available
-		self.updateFreeSpace()
-		
-		# Update treeviews.
-		self.updateTreeViews()
+	def updateScreenInfo(self):
+		try:
+			# Update amount of free space available
+			self.updateFreeSpace()
+			
+			# Update treeviews.
+			self.updateTreeViews()
+		except PuppyNoPVRError, error:
+			self.pvr_error_btn.show()
+			self.pvr_error_window.addError(_('PVR not connected'), error)
+			pass
+			
 		return True
 
 	def updateTreeViews(self):		
@@ -679,6 +687,8 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			if isinstance(model, PVRFileSystemModel):
 				try:
 					model.updateCache()
+				except PuppyNoPVRError:
+					raise
 				except PuppyError, error:
 					self.pvr_error_btn.show()
 					self.pvr_error_window.addError(_('Failed to get list of files on PVR'), error)
