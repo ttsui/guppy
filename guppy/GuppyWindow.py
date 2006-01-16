@@ -634,9 +634,8 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			if fs_model == self.pvr_model or fs_model == None:
 				self.pvr_free_space_label.set_text(_('Free Space') + ': ' + self.pvr_model.freeSpace())
 		except PuppyError, error:
-			print 'updateFreeSpace(); ERROR = ', error
 			self.pvr_error_btn.show()
-			self.pvr_error_window.addError(_('Failed to get free disk space on PVR'))
+			self.pvr_error_window.addError(_('Failed to get free disk space on PVR'), error)
 			pass
 			
 		if fs_model == self.pc_model or fs_model == None:
@@ -681,9 +680,8 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 				try:
 					model.updateCache()
 				except PuppyError, error:
-					print 'updateTreeViews(): Error = ', error
 					self.pvr_error_btn.show()
-					self.pvr_error_window.addError(_('Failed to get list of files on PVR'))
+					self.pvr_error_window.addError(_('Failed to get list of files on PVR'), error)
 					pass
 
 			model.changeDir()
@@ -695,6 +693,13 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 
 
 class PVRErrorWindow:
+	ICON_COL, ICON_SIZE_COL, MSG_COL, OUTPUT_COL = range(4)
+	LIST_TYPES = []
+	LIST_TYPES.insert(ICON_COL, gobject.TYPE_STRING)
+	LIST_TYPES.insert(ICON_SIZE_COL, gobject.TYPE_UINT)
+	LIST_TYPES.insert(MSG_COL, gobject.TYPE_STRING)
+	LIST_TYPES.insert(OUTPUT_COL, gobject.TYPE_STRING)
+
 	def __init__(self, glade_file):
 		glade_xml = gtk.glade.XML(glade_file, 'pvr_error_window')
 		# Connect callback functions in glade file to functions
@@ -702,23 +707,44 @@ class PVRErrorWindow:
 
 		self.glade_file = glade_file		
 		self.error_window = glade_xml.get_widget('pvr_error_window')
-		self.pvr_error_vbox = glade_xml.get_widget('pvr_error_vbox')
-		
-	def addError(self, msg):
-		xml = gtk.glade.XML(self.glade_file, 'pvr_error_box')
-		error_box = xml.get_widget('pvr_error_box')
-		error_label = xml.get_widget('pvr_error_label')
+		self.pvr_error_output_label = glade_xml.get_widget('pvr_error_output_label')
 
+		self.liststore = gtk.ListStore(PVRErrorWindow.LIST_TYPES[PVRErrorWindow.ICON_COL],
+		                               PVRErrorWindow.LIST_TYPES[PVRErrorWindow.ICON_SIZE_COL],
+		                               PVRErrorWindow.LIST_TYPES[PVRErrorWindow.MSG_COL],
+		                               PVRErrorWindow.LIST_TYPES[PVRErrorWindow.OUTPUT_COL])
+
+		self.pvr_error_treeview = glade_xml.get_widget('pvr_error_treeview')
+
+		self.pvr_error_treeview.set_model(self.liststore)
+		handler_id = self.pvr_error_treeview.get_selection().connect('changed', self.on_pvr_error_treeview_changed)
+		
+		text_cell = gtk.CellRendererText()
+		pixb_cell = gtk.CellRendererPixbuf()
+		
+		col = gtk.TreeViewColumn()
+		col.pack_start(pixb_cell, False)
+		col.pack_start(text_cell, True)
+		col.set_attributes(text_cell, markup=PVRErrorWindow.MSG_COL)
+		col.set_attributes(pixb_cell, stock_id=PVRErrorWindow.ICON_COL, stock_size=PVRErrorWindow.ICON_SIZE_COL)
+		self.pvr_error_treeview.append_column(col)
+		
+	def addError(self, msg, error_output):
 		error_msg = _('ERROR') + ': ' + datetime.datetime.now().strftime('%a %b %d, %I:%M %p') +'\n'
 		error_msg += '<b>' + msg + '</b>'
-		error_label.set_markup(error_msg)
-
-		self.pvr_error_vbox.pack_start(error_box, expand=False)
-		self.pvr_error_vbox.show_all()
 		
+		self.liststore.append([gtk.STOCK_DIALOG_ERROR, gtk.ICON_SIZE_DIALOG, error_msg, error_output])
+
+	def on_pvr_error_treeview_changed(self, widget):
+		model, iter = widget.get_selected()
+		if iter == None:
+			return
+		
+		self.pvr_error_output_label.set_text(model.get_value(iter, PVRErrorWindow.OUTPUT_COL))
+
 	def on_pvr_error_window_clear(self, widget, data=None):
-		for child in self.pvr_error_vbox:
-			child.destroy()
+		self.liststore.clear()
+		self.pvr_error_output_label.set_text('')
 
 	def on_pvr_error_window_close(self, widget, event=None, data=None):
 		self.error_window.hide()
