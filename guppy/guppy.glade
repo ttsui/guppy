@@ -147,6 +147,7 @@
 
 			  <child>
 			    <widget class="GtkButton" id="pvr_error_btn">
+			      <property name="border_width">2</property>
 			      <property name="can_focus">True</property>
 			      <property name="relief">GTK_RELIEF_NORMAL</property>
 			      <property name="focus_on_click">True</property>

@@ -837,10 +837,13 @@ class TransferThread(threading.Thread):
 			if self.guppy.turbo == True:
 				self.guppy.puppy.setTurbo(True)
 				
-			if direction == 'download':
-				self.guppy.puppy.getFile(src_file, dst_file)
-			else:
-				self.guppy.puppy.putFile(src_file, dst_file)
+			try:
+				if direction == 'download':
+					self.guppy.puppy.getFile(src_file, dst_file)
+				else:
+					self.guppy.puppy.putFile(src_file, dst_file)
+			except PuppyError:
+				pass
 
 			transfer_successful = True
 			transfer_attempt = 1
@@ -848,10 +851,11 @@ class TransferThread(threading.Thread):
 			while percent != None:
 				try:
 					percent, speed, time = self.guppy.puppy.getProgress()
-				except PuppyError:
+				except PuppyError, error:
 					# Quit trying to transfer file after a certain number of attempts
 					if transfer_attempt > TransferThread.NUM_OF_TRANSFER_ATTEMPTS:
 						transfer_successful = False
+						transfer_error = error
 						break
 					
 					transfer_attempt += 1
@@ -863,10 +867,13 @@ class TransferThread(threading.Thread):
 						reset_successful = self.guppy.puppy.reset()
 						attempts += 1
 
-					if direction == 'download':
-						self.guppy.puppy.getFile(src_file, dst_file)
-					else:
-						self.guppy.puppy.putFile(src_file, dst_file)
+					try:
+						if direction == 'download':
+							self.guppy.puppy.getFile(src_file, dst_file)
+						else:
+							self.guppy.puppy.putFile(src_file, dst_file)
+					except PuppyError:
+						pass
 
 					continue
 
@@ -894,6 +901,8 @@ class TransferThread(threading.Thread):
 				progress_bar.set_text(_('Finished'))
 			else:
 				progress_bar.set_text(_('Transfer Failed'))
+				self.guppy.pvr_error_btn.show()
+				self.guppy.pvr_error_window.addError(_('Transfer Failed'), transfer_error)
 
 			gtk.gdk.threads_leave()
 				

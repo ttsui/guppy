@@ -127,7 +127,6 @@ class Puppy:
 		self.progress_output = self._execute(args)
 
 		status = self.getStatus(wait=False)
-		print 'status = ', status
 		if status != 0 and status != -1:
 			self._handleErrorOuput(self.progress_output)
 			
