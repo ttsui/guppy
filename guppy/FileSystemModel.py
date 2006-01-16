@@ -33,13 +33,21 @@ DEBUG = False
 
 class FileSystemModel(gtk.ListStore):
 	TYPE_COL, ICON_COL, NAME_COL, DATE_COL, SIZE_COL = range(5)
+	LIST_TYPES = []
+	LIST_TYPES.insert(TYPE_COL, gobject.TYPE_STRING)
+	LIST_TYPES.insert(ICON_COL, gobject.TYPE_STRING)
+	LIST_TYPES.insert(NAME_COL, gobject.TYPE_STRING)
+	LIST_TYPES.insert(DATE_COL, gobject.TYPE_STRING)
+	LIST_TYPES.insert(SIZE_COL, gobject.TYPE_STRING)
 
 	def __init__(self, show_parent_dir=False):
 		self.current_dir = None
 		self.show_parent_dir = show_parent_dir
-		gtk.ListStore.__init__(self, gobject.TYPE_STRING, gobject.TYPE_STRING,
-		                             gobject.TYPE_STRING, gobject.TYPE_STRING,
-		                             gobject.TYPE_STRING)
+		gtk.ListStore.__init__(self, FileSystemModel.LIST_TYPES[FileSystemModel.TYPE_COL],
+							   FileSystemModel.LIST_TYPES[FileSystemModel.ICON_COL],
+		                       FileSystemModel.LIST_TYPES[FileSystemModel.NAME_COL],
+							   FileSystemModel.LIST_TYPES[FileSystemModel.DATE_COL],
+			                   FileSystemModel.LIST_TYPES[FileSystemModel.SIZE_COL])
 
 	def find(self, name):
 		for row in self:
