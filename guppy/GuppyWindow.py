@@ -707,7 +707,7 @@ class PVRErrorWindow:
 
 		self.glade_file = glade_file		
 		self.error_window = glade_xml.get_widget('pvr_error_window')
-		self.pvr_error_output_label = glade_xml.get_widget('pvr_error_output_label')
+		self.pvr_error_output = glade_xml.get_widget('pvr_error_output')
 
 		self.liststore = gtk.ListStore(PVRErrorWindow.LIST_TYPES[PVRErrorWindow.ICON_COL],
 		                               PVRErrorWindow.LIST_TYPES[PVRErrorWindow.ICON_SIZE_COL],
@@ -740,11 +740,15 @@ class PVRErrorWindow:
 		if iter == None:
 			return
 		
-		self.pvr_error_output_label.set_text(model.get_value(iter, PVRErrorWindow.OUTPUT_COL))
+		textbuf = gtk.TextBuffer()
+		textbuf.set_text(model.get_value(iter, PVRErrorWindow.OUTPUT_COL))
+		
+		self.pvr_error_output.set_buffer(textbuf)
 
 	def on_pvr_error_window_clear(self, widget, data=None):
 		self.liststore.clear()
-		self.pvr_error_output_label.set_text('')
+		textbuf = self.pvr_error_output.get_buffer()
+		textbuf.set_text('')
 
 	def on_pvr_error_window_close(self, widget, event=None, data=None):
 		self.error_window.hide()
