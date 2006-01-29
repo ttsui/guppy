@@ -1,5 +1,5 @@
 ## GuppyWindow.py - Main Window
-## Copyright (C) 2005 Tony Tsui <tsui.tony@gmail.com>
+## Copyright (C) 2005-2006 Tony Tsui <tsui.tony@gmail.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -181,15 +181,24 @@ class GuppyWindow:
 		self.download_actiongrp.add_actions([('Download', gtk.STOCK_GO_FORWARD, _('_Download'), '<Ctrl>d', _('Download File'), self.on_download_btn_clicked)])
 		self.download_actiongrp.set_sensitive(False)
 		self.uimanager.insert_action_group(self.download_actiongrp, 2)
+
+		# Action group for File TreeView popup menu		
+		self.file_actiongrp = gtk.ActionGroup('FileTreePopupAction')
+		self.file_actiongrp.add_actions([('Delete', gtk.STOCK_DELETE, _('_Delete'), None, None, self.on_delete_btn_clicked),
+		                                 ('Rename', None, _('_Rename'), None, None, self.on_rename_btn_clicked),
+										 ('MakeDir', None, _('Create _Folder'), None, None, self.on_mkdir_btn_clicked),
+										 ])
+		self.uimanager.insert_action_group(self.file_actiongrp, 3)
 		
 		self.uimanager.add_ui_from_file(self.datadir + 'guppy-gtk.xml')
 
-	
+		self.file_popup = self.uimanager.get_widget('/FileTreePopup')
+		self.file_popup_rename_btn = self.uimanager.get_widget('/FileTreePopup/Rename')
+
 	def customWidgetHandler(self, glade, func_name, widget_name, str1, str2, int1, int2, *args):
 		handler = getattr(self, func_name)
 		return handler(str1, str2, int1, int2)
 		
-
 	def createFileTrees(self):	
 		self.pvr_treeview = self.glade_xml.get_widget('pvr_treeview')	
 		pvr_liststore = self.pvr_model.filter_new()
@@ -221,13 +230,31 @@ class GuppyWindow:
 
 			treeview.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
 			
-			treeview.connect('row-activated', self.on_treeview_row_activated, fs_model)
-			handler_id = treeview.get_selection().connect('changed', self.on_treeview_changed, fs_model)
+			treeview.connect('row-activated',
+			                 self.on_treeview_row_activated,
+			                 fs_model)
+			handler_id = treeview.get_selection().connect('changed',
+			                                              self.on_treeview_changed,
+			                                              fs_model)
+			# Store change handler id so we can block the 'changed' signal when
+			# updating the tree view
 			treeview.set_data('changed_handler_id', handler_id)
 			
+			# Connect callback to bring up popup menu
+			treeview.connect('button-press-event',
+			                 self.on_treeview_button_press,
+			                 fs_model)
+
+			# Text cell for file name			
 			text_cell = gtk.CellRendererText()
 			text_cell.set_property('ellipsize', pango.ELLIPSIZE_END)
 			text_cell.set_property('ellipsize-set', True)
+			# Pass in sorted_model because that is the model we will be getting
+			# the tree path from.
+			text_cell.connect('edited', self.on_name_cell_edited, liststore, fs_model)
+			text_cell.connect('editing-canceled', self.on_name_cell_editing_cancelled)
+
+			# Pixbuf cell for file icon
 			pixb_cell = gtk.CellRendererPixbuf()
 			
 			col = gtk.TreeViewColumn(_('Name'))
@@ -315,15 +342,57 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 
 		col.set_sort_order(order)
 		data[0].set_sort_column_id(data[1], order)
+
+	def on_delete_btn_clicked(self, widget, data=None):
+		selection = self.active_treeview.get_selection()
+		model, rows = selection.get_selected_rows()
+		
+		files = []
+		for path in rows:
+			iter = model.get_iter(path)
+			name = model.get_value(iter, FileSystemModel.NAME_COL)
+			files.append(name)
+			
+		self.delete_files(files, self.active_fsmodel)
+			
+	def delete_files(self, files, fs_model):
+		"""Delete files from file system. Popup error dialog for errors.
+	
+		Return: True if all files deleted.
+		"""
+		retval = True
+		for name in files:
+			deleted = False
+			while not deleted:
+				try:
+					fs_model.delete(name)
+					deleted = True
+				except OSError:
+					SKIP, RETRY = range(2)
+					msg = '<b>' + _('Error while deleting.') + '</b>\n\n' + _('Cannot delete')
+					msg += ' "' + fs_model.getCWD() + '/' + name + '" '
+					msg += _('because you do not have permissions to change it or its parent folder.')
+					dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR)
+					dialog.set_markup(msg)
+					dialog.add_buttons( _('Skip'), SKIP, _('Retry'), RETRY)
+					response = dialog.run()
+					dialog.destroy()
+		
+					# Skip this file and go to next file
+					if response == SKIP or response == gtk.RESPONSE_DELETE_EVENT:
+						retval = False
+						break
+				
+					# Try to delete again
+					continue
+
+		fs_model.changeDir()
+		self.updateFreeSpace(fs_model)
+		
+		return retval
 	
 	def on_download_btn_clicked(self, widget, data=None):
 		self.transferFile('download')
-
-	def on_window_delete_event(self, widget, event, data=None):
-		self.on_quit(widget, data)
-		# Return True to stop event from propagating to default handler
-		# which destroys the window.
-		return True
 
 	def on_goto_pc_dir(self, widget, data=None):
 		if self.pc_path_bar:
@@ -336,21 +405,88 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			self.pvr_path_bar.hide()		
 			self.pvr_path_entry_box.show()
 		self.pvr_path_entry.grab_focus()
+
+	def on_mkdir_btn_clicked(self, widget, data=None):
+		pass
+
+	def on_name_cell_edited(self, cell, path, new_name, model, fs_model):
+		# Set editable to False so users can't edit the cell by clicking on it.
+		cell.set_property('editable', False)
+
+		iter = model.get_iter(path)
+		old_name = model.get_value(iter, FileSystemModel.NAME_COL)
 		
+		renamed = False
+		while not renamed:
+			try:
+				fs_model.rename(old_name, new_name)
+				renamed = True
+			except OSError, error:
+				print 'error = ', error
+
+				# Handle Permission Denied error				
+				if str(error).find('Errno 13') != -1:
+					SKIP, RETRY = range(2)
+					msg = '<b>' + _('Error while renaming.') + '</b>\n\n' + _('Cannot rename')
+					msg += ' "' + fs_model.getCWD() + '/' + old_name + '" '
+					msg += _('because you do not have permissions to change it or its parent folder.')
+					dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR)
+					dialog.set_markup(msg)
+					dialog.add_buttons( _('Skip'), SKIP, _('Retry'), RETRY)
+					response = dialog.run()
+					dialog.destroy()
+		
+					# Skip this file and go to next file
+					if response == SKIP or response == gtk.RESPONSE_DELETE_EVENT:
+						retval = False
+						break
+				
+					# Try to delete again
+					continue
+				elif str(error).find('Errno 17') != -1:
+					CANCEL, REPLACE = range(2)
+					msg = '<b>' + _('Another item already has that name') + '.</b>'
+					dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR)
+					dialog.set_markup(msg)
+					dialog.add_buttons( _('Cancel'), CANCEL,_('Replace'), REPLACE)
+					response = dialog.run()
+					dialog.destroy()
+		
+					# Skip this file and go to next path in files
+					if response == CANCEL or response == gtk.RESPONSE_DELETE_EVENT:
+						break
+		
+					deleted = self.delete_files([new_name], fs_model)
+					
+					if not deleted:
+						break
+		
+		fs_model.changeDir()
+
+	def on_name_cell_editing_cancelled(self, cell, data=None):
+		# Set editable to False so users can't edit the cell by clicking on it.
+		cell.set_property('editable', False)
+
 	def on_path_entry_activate(self, widget, fs_model):
 		path = widget.get_text()
-		fs_model.changeDir(path)
+
+		dir_changed = fs_model.changeDir(path)
+	
+		if dir_changed == False:
+			widget.set_text(fs_model.getCWD())
 		
 		if fs_model == self.pc_model:
 			self.updateFreeSpace(self.pc_model)
 			if self.no_path_bar_support == False:
 				self.pc_path_entry_box.hide()
-				self.pc_path_bar.setPath(path)
+				if dir_changed:
+					self.pc_path_bar.setPath(path)
 				self.pc_path_bar.show()
 		else:
 			if self.no_path_bar_support == False:
 				self.pvr_path_entry_box.hide()
-				self.pvr_path_bar.setPath(path)
+				if dir_changed:
+					self.pvr_path_bar.setPath(path)
 				self.pvr_path_bar.show()
 		
 	def on_pvr_error_btn_clicked(self, widget, data=None):
@@ -388,7 +524,18 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			self.quit_after_transfer = True
 			if self.last_file_transfer != None and self.last_file_transfer.isAlive():
 				self.last_file_transfer.setQuitAfterTransfer(True)
-				
+
+	def on_rename_btn_clicked(self, widget, data=None):
+		selection = self.active_treeview.get_selection()
+		model, files = selection.get_selected_rows()
+		
+		path = files[0]
+		iter = model.get_iter(path)
+		col = self.active_treeview.get_column(0)
+		cells = col.get_cell_renderers()
+		cells[1].set_property('editable', True)
+		self.active_treeview.set_cursor(path, col, start_editing=True)
+					
 	def on_show_file_transfer_toggled(self, widget, data=None):
 		transfer_frame = self.glade_xml.get_widget('transfer_frame')
 		if widget.get_active():
@@ -401,7 +548,30 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		self.pc_liststore.get_model().refilter()
 		self.pvr_liststore.get_model().refilter()
 
+	def on_treeview_button_press(self, treeview, event, fs_model):
+		print 'on_treeview_button_press()'
+		if event.button == 3:
+			time = event.time
+			self.active_treeview = treeview
+			self.active_fsmodel = fs_model
+			
+			selection = self.active_treeview.get_selection()
+			model, files = selection.get_selected_rows()
+			if len(files) == 1:
+				self.file_popup_rename_btn.set_sensitive(True)
+			else:
+				self.file_popup_rename_btn.set_sensitive(False)
+
+			#TODO connect signal handler for popup menu items here so we can pass in treeview and model
+			# instead of using a global variable
+
+			self.file_popup.popup( None, None, None, event.button, time)
+			
+			# Return True so row selection doesn't get changed.
+			return True
+		
 	def on_treeview_changed(self, widget, fs_model):
+		print 'on_treeview_changed()'
 		model, files = widget.get_selected_rows()
 		
 		file_count = len(files)
@@ -455,9 +625,6 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 					self.pvr_path_bar.show()
 				self.pvr_path_entry.set_text(path)
 			
-	def on_turbo_toggled(self, widget, data=None):
-		self.turbo = widget.get_active()
-
 	def on_transfer_clear_btn_clicked(self, widget, data=None):
 		# Loop until we get a Queue.Empty exception
 		while True:
@@ -486,12 +653,21 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			self.last_file_transfer.setQuitAfterTransfer(False)
 		self.puppy.cancelTransfer()
 
+	def on_turbo_toggled(self, widget, data=None):
+		self.turbo = widget.get_active()
+
 	def on_upload_btn_clicked(self, widget, data=None):
 		self.transferFile('upload')
 
+	def on_window_delete_event(self, widget, event, data=None):
+		self.on_quit(widget, data)
+		# Return True to stop event from propagating to default handler
+		# which destroys the window.
+		return True
+
 	def reallyQuit(self):
 		gtk.main_quit()
-	
+		
 	def show_transfer_frame(self):
 		# Set position of pane separator
 		# Give progress frame height of 180 pixels. This should be enough room
@@ -501,7 +677,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		
 		transfer_frame = self.glade_xml.get_widget('transfer_frame')
 		transfer_frame.show()
-
+		
 	def transferFile(self, direction):
 		if direction == 'download':
 			model, files = self.pvr_treeview.get_selection().get_selected_rows()
@@ -623,7 +799,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 				old_last_file_transfer.setQuitAfterTransfer(False)
 			
 			self.last_file_transfer.setQuitAfterTransfer(True)
-
+			
 	def updateFreeSpace(self, fs_model=None):			
 		'''Update label showing free space available on each file system.
 	
@@ -670,6 +846,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			pass
 			
 		return True
+	
 
 	def updateTreeViews(self):		
 		# Update FileSystemModel view				

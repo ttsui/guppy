@@ -102,7 +102,8 @@ elif listdir:
 	if len(args) > 0 and len(args[0]):
 		if args[0][0] != '\\':
 			dir = '-'
-		dir += args[0].replace('\\', '-')
+		if args[0] != '\\':
+			dir += args[0].replace('\\', '-')
 	list_file = 'puppy-dir' + dir + '.txt'
 	listing = open(DATA_DIR + list_file)
 	for line in listing:

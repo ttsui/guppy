@@ -45,4 +45,9 @@
 		<separator/>
 		<toolitem action="Upload"/>
 	</toolbar>
+	<popup name="FileTreePopup">
+		<menuitem action="Delete"/>
+		<menuitem action="Rename"/>
+		<menuitem action="MakeDir"/>
+	</popup>
 </ui>

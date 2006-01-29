@@ -178,6 +178,7 @@ class Puppy:
 		return
 
 	def delete(self, filename):
+		print 'Puppy::delete(): filename = ', filename
 		args = ['-c', 'delete', filename]
 			
 		output_file = self._execute(args)
@@ -185,6 +186,7 @@ class Puppy:
 		output = output_file.readlines()
 		output_file.close()
 		
+		print output
 		# Parse output of output_file and return it as a list
 		
 		if self.getStatus() != 0:

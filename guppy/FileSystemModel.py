@@ -59,6 +59,15 @@ class FileSystemModel(gtk.ListStore):
 	def getCWD(self):
 		return self.current_dir
 	
+	def rename(self, old, new, overwrite=False):
+		if old == new:
+			return
+		
+		if not overwrite and self.exists(new):
+			raise os.error('[Errno 17] File exists')
+		
+		print 'renaming: ', self.current_dir + '/' + old, ' to ', self.current_dir + '/' + new
+		
 	def sort_func(self, model, iter1, iter2, col=None):
 		type1 = model.get_value(iter1, FileSystemModel.TYPE_COL)
 		type2 = model.get_value(iter2, FileSystemModel.TYPE_COL)
@@ -174,7 +183,7 @@ class PCFileSystemModel(FileSystemModel):
 			dir = '/'
 		
 		if not os.access(dir, os.F_OK):
-			return
+			return False
 
 		self.current_dir = dir
 			
@@ -205,6 +214,21 @@ class PCFileSystemModel(FileSystemModel):
 			entry = [ type, icon, file, mtime, size ]
 			self.append(entry)
 
+		return True
+	
+	def delete(self, file):
+		path = self.current_dir + '/' + file
+		
+		mode = os.stat(path)
+		if stat.S_ISDIR(mode[stat.ST_MODE]):
+			import shutil
+			shutil.rmtree(path)
+		else:
+			os.remove(path)
+		
+	def exists(self, file):
+		return os.access(self.current_dir + '/' + file, os.F_OK)
+		
 	def freeSpace(self):
 		cmd = 'df -P ' + '"' + self.current_dir + '"'
 		pipe = os.popen(cmd)
@@ -222,6 +246,17 @@ class PCFileSystemModel(FileSystemModel):
 		# Multiple by 1024 to convert from kilobytes to bytes
 		return humanReadableSize(int(output[3])*1024)
 
+	def rename(self, old, new, overwrite=False):
+		try:
+			FileSystemModel.rename(self, old, new)
+		except OSError:
+			# Update model to ensure the latest files in the current
+			# is visble.
+			self.changeDir()
+			raise
+		
+		print 'renaming: ', self.current_dir + '/' + old, ' to ', self.current_dir + '/' + new
+		os.rename(self.current_dir + '/' + old, self.current_dir + '/' + new)
 
 class PVRFileSystemModel(FileSystemModel):
 	def __init__(self, show_parent_dir=False):
@@ -289,6 +324,19 @@ class PVRFileSystemModel(FileSystemModel):
 		if self.show_parent_dir:
 			self.append([ 'd', gtk.STOCK_DIRECTORY, '..', '', ''])
 
+	def delete(self, file):
+		print 'file = ', file
+		self.puppy.delete(self.current_dir + '\\' + file)
+
+	def exists(self, file):
+		pvr_files = self.puppy.listDir(self.current_dir)
+		
+		for p_file in pvr_files:
+			if p_file[1] == file:
+				return True
+			
+		return False
+	
 	def findDirectory(self, path):
 		"""Find the DirectoryNode object for the given path.
 		
@@ -318,6 +366,18 @@ class PVRFileSystemModel(FileSystemModel):
 
 		return humanReadableSize(self.freespace)
 
+	def rename(self, old, new, overwrite=False):
+		try:
+			FileSystemModel.rename(self, old, new)
+		except OSError:
+			# Update model to ensure the latest files in the current
+			# is visble.
+			self.updateCache()
+			self.changeDir()
+			raise
+		
+		self.puppy.rename(self.current_dir + '/' + old, self.current_dir + '/' + new)
+		
 	def scanDirectory(self, dir):
 		"""Recursively scan a directory for all subdirectories and files.
 		
