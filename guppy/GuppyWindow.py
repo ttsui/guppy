@@ -293,7 +293,43 @@ class GuppyWindow:
 		toolbar = self.uimanager.get_widget('/Toolbar')
 		toolbar.set_orientation(gtk.ORIENTATION_VERTICAL)
 		return toolbar
-			
+
+	def deleteFiles(self, files, fs_model):
+		"""Delete files from file system. Popup error dialog for errors.
+	
+		Return: True if all files deleted.
+		"""
+		retval = True
+		for name in files:
+			deleted = False
+			while not deleted:
+				try:
+					fs_model.delete(name)
+					deleted = True
+				except OSError:
+					SKIP, RETRY = range(2)
+					msg = '<b>' + _('Error while deleting.') + '</b>\n\n' + _('Cannot delete')
+					msg += ' "' + fs_model.getCWD() + '/' + name + '" '
+					msg += _('because you do not have permissions to change it or its parent folder.')
+					dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR)
+					dialog.set_markup(msg)
+					dialog.add_buttons( _('Skip'), SKIP, _('Retry'), RETRY)
+					response = dialog.run()
+					dialog.destroy()
+		
+					# Skip this file and go to next file
+					if response == SKIP or response == gtk.RESPONSE_DELETE_EVENT:
+						retval = False
+						break
+				
+					# Try to delete again
+					continue
+
+		fs_model.changeDir()
+		self.updateFreeSpace(fs_model)
+		
+		return retval
+	
 	def hiddenFileFilter(self, model, iter, data=None):
 		name = model.get_value(iter, FileSystemModel.NAME_COL)
 		if self.show_hidden == False and (name == None or (name[0] == '.' and name[1] != '.')):
@@ -353,44 +389,8 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			name = model.get_value(iter, FileSystemModel.NAME_COL)
 			files.append(name)
 			
-		self.delete_files(files, self.active_fsmodel)
+		self.deleteFiles(files, self.active_fsmodel)
 			
-	def delete_files(self, files, fs_model):
-		"""Delete files from file system. Popup error dialog for errors.
-	
-		Return: True if all files deleted.
-		"""
-		retval = True
-		for name in files:
-			deleted = False
-			while not deleted:
-				try:
-					fs_model.delete(name)
-					deleted = True
-				except OSError:
-					SKIP, RETRY = range(2)
-					msg = '<b>' + _('Error while deleting.') + '</b>\n\n' + _('Cannot delete')
-					msg += ' "' + fs_model.getCWD() + '/' + name + '" '
-					msg += _('because you do not have permissions to change it or its parent folder.')
-					dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR)
-					dialog.set_markup(msg)
-					dialog.add_buttons( _('Skip'), SKIP, _('Retry'), RETRY)
-					response = dialog.run()
-					dialog.destroy()
-		
-					# Skip this file and go to next file
-					if response == SKIP or response == gtk.RESPONSE_DELETE_EVENT:
-						retval = False
-						break
-				
-					# Try to delete again
-					continue
-
-		fs_model.changeDir()
-		self.updateFreeSpace(fs_model)
-		
-		return retval
-	
 	def on_download_btn_clicked(self, widget, data=None):
 		self.transferFile('download')
 
@@ -474,7 +474,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 					if response == CANCEL or response == gtk.RESPONSE_DELETE_EVENT:
 						break
 		
-					deleted = self.delete_files([new_name], fs_model)
+					deleted = self.deleteFiles([new_name], fs_model)
 					
 					if not deleted:
 						break
