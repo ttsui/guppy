@@ -325,7 +325,7 @@ class GuppyWindow:
 					# Try to delete again
 					continue
 
-		fs_model.changeDir()
+		self.updateTreeViews(fs_model)
 		self.updateFreeSpace(fs_model)
 		
 		return retval
@@ -410,7 +410,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		name = self.active_fsmodel.mkdir()
 		
 		# Update model to get new folder
-		self.active_fsmodel.changeDir()
+		self.updateTreeViews(self.active_fsmodel)
 
 		# Get row for new folder		
 		model = self.active_treeview.get_model()
@@ -418,6 +418,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			if row[FileSystemModel.NAME_COL] == name:
 				# Select row for new folder
 				selection = self.active_treeview.get_selection()
+				selection.unselect_all()
 				selection.select_path(row.path)
 				
 				# Rename new folder
@@ -479,7 +480,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 					if not deleted:
 						break
 		
-		fs_model.changeDir()
+		self.updateTreeViews(fs_model)
 
 	def on_name_cell_editing_cancelled(self, cell, data=None):
 		# Set editable to False so users can't edit the cell by clicking on it.
@@ -588,6 +589,12 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			return True
 		
 	def on_treeview_changed(self, widget, fs_model):
+		""" Update status bar with selection size and button sensitivity.
+		
+		    Update the total size of all files selected and the sensitivity of
+		    download/upload button based on row selection.
+		    
+		"""
 		model, files = widget.get_selected_rows()
 		
 		file_count = len(files)
@@ -864,9 +871,15 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		return True
 	
 
-	def updateTreeViews(self):		
-		# Update FileSystemModel view				
-		models = [ (self.pc_model, self.pc_treeview), (self.pvr_model, self.pvr_treeview) ]
+	def updateTreeViews(self, fs_model=None):
+		# Update FileSystemModel view
+		if fs_model == self.pc_model:
+			models = [ (self.pc_model, self.pc_treeview) ]
+		elif fs_model == self.pvr_model:
+			models = [ (self.pvr_model, self.pvr_treeview) ]
+		else:
+			models = [ (self.pc_model, self.pc_treeview), (self.pvr_model, self.pvr_treeview) ]
+		
 		for model, treeview in models:
 			handler_id = treeview.get_data('changed_handler_id')
 			selection = treeview.get_selection()
