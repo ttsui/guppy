@@ -55,7 +55,17 @@ class FileSystemModel(gtk.ListStore):
 				return row
 				
 		return None
+
+	def mkdir(self):
+		name = 'untitled folder'
+		name_count = 1
+		
+		while self.exists(name):
+			name = 'untitled folder ' + str(name_count)
+			name_count += 1
 			
+		return name
+				
 	def getCWD(self):
 		return self.current_dir
 	
@@ -246,6 +256,16 @@ class PCFileSystemModel(FileSystemModel):
 		# Multiple by 1024 to convert from kilobytes to bytes
 		return humanReadableSize(int(output[3])*1024)
 
+	def mkdir(self):
+		name = FileSystemModel.mkdir(self)
+			
+		if DEBUG:
+			print 'making directory: ', self.current_dir + '/' + name
+		
+		os.mkdir(self.current_dir + '/' + name)
+		
+		return name
+		
 	def rename(self, old, new, overwrite=False):
 		try:
 			FileSystemModel.rename(self, old, new)
@@ -255,7 +275,9 @@ class PCFileSystemModel(FileSystemModel):
 			self.changeDir()
 			raise
 		
-		print 'renaming: ', self.current_dir + '/' + old, ' to ', self.current_dir + '/' + new
+		if DEBUG:
+			print 'renaming: ', self.current_dir + '/' + old, ' to ', self.current_dir + '/' + new
+			
 		os.rename(self.current_dir + '/' + old, self.current_dir + '/' + new)
 
 class PVRFileSystemModel(FileSystemModel):
@@ -366,6 +388,13 @@ class PVRFileSystemModel(FileSystemModel):
 
 		return humanReadableSize(self.freespace)
 
+	def mkdir(self):
+		name = FileSystemModel.mkdir(self)
+			
+		if DEBUG:
+			print 'making directory: ', self.current_dir + '/' + name
+		self.puppy.makeDir(self.current_dir + '\\' + name)
+		
 	def rename(self, old, new, overwrite=False):
 		try:
 			FileSystemModel.rename(self, old, new)

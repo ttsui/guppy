@@ -407,7 +407,23 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		self.pvr_path_entry.grab_focus()
 
 	def on_mkdir_btn_clicked(self, widget, data=None):
-		pass
+		name = self.active_fsmodel.mkdir()
+		
+		# Update model to get new folder
+		self.active_fsmodel.changeDir()
+
+		# Get row for new folder		
+		model = self.active_treeview.get_model()
+		for row in model:
+			if row[FileSystemModel.NAME_COL] == name:
+				# Select row for new folder
+				selection = self.active_treeview.get_selection()
+				selection.select_path(row.path)
+				
+				# Rename new folder
+				self.on_rename_btn_clicked(widget)
+				break
+		
 
 	def on_name_cell_edited(self, cell, path, new_name, model, fs_model):
 		# Set editable to False so users can't edit the cell by clicking on it.
@@ -445,7 +461,9 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 					continue
 				elif str(error).find('Errno 17') != -1:
 					CANCEL, REPLACE = range(2)
-					msg = '<b>' + _('Another item already has that name') + '.</b>'
+					msg = '<b>' + _('The item could not be renamed') + '.</b>\n\n'
+					msg += _('The name') + ' "' + new_name + '" '
+					msg += _('is already used in this folder.')
 					dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR)
 					dialog.set_markup(msg)
 					dialog.add_buttons( _('Cancel'), CANCEL,_('Replace'), REPLACE)
@@ -549,7 +567,6 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		self.pvr_liststore.get_model().refilter()
 
 	def on_treeview_button_press(self, treeview, event, fs_model):
-		print 'on_treeview_button_press()'
 		if event.button == 3:
 			time = event.time
 			self.active_treeview = treeview
@@ -571,7 +588,6 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			return True
 		
 	def on_treeview_changed(self, widget, fs_model):
-		print 'on_treeview_changed()'
 		model, files = widget.get_selected_rows()
 		
 		file_count = len(files)
