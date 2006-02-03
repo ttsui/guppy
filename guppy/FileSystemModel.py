@@ -49,6 +49,12 @@ class FileSystemModel(gtk.ListStore):
 							   FileSystemModel.LIST_TYPES[FileSystemModel.DATE_COL],
 			                   FileSystemModel.LIST_TYPES[FileSystemModel.SIZE_COL])
 
+	def abspath(self, file):
+		if self.current_dir[-1] != self.separator and file[0] != self.separator:
+			return self.current_dir + self.separator + file
+		else:
+			return self.current_dir + file
+		
 	def find(self, name):
 		for row in self:
 			if name == row[FileSystemModel.NAME_COL]:
@@ -76,7 +82,8 @@ class FileSystemModel(gtk.ListStore):
 		if not overwrite and self.exists(new):
 			raise os.error('[Errno 17] File exists')
 		
-		print 'renaming: ', self.current_dir + '/' + old, ' to ', self.current_dir + '/' + new
+		if DEBUG:
+			print 'renaming: ', self.abspath(old), ' to ', self.abspath(new)
 		
 	def sort_func(self, model, iter1, iter2, col=None):
 		type1 = model.get_value(iter1, FileSystemModel.TYPE_COL)
@@ -180,10 +187,13 @@ class PCFileSystemModel(FileSystemModel):
 		# FIXME: Get dir from when Guppy last exited
 		self.current_dir = os.environ['HOME']
 		
+		self.separator = '/'
+		
 	def changeDir(self, dir=None):
 		if dir:
-			if dir[0] != '/':
-				dir = self.current_dir + '/' + dir
+			# Append CWD if dir is not an absolute path
+			if dir[0] != self.separator:
+				dir = self.abspath(dir)
 		else:
 			dir = self.current_dir
 
@@ -206,9 +216,9 @@ class PCFileSystemModel(FileSystemModel):
 		
 		for file in os.listdir(self.current_dir):
 			try:
-				mode = os.stat(self.current_dir + '/' + file)
+				mode = os.stat(self.abspath(file))
 			except OSError, (errno, strerror):
-				print 'PCFileSystemModel::changeDir(%s): OSError(%s): %s\n' % (self.current_dir + '/' + file, errno, strerror)
+				print 'PCFileSystemModel::changeDir(%s): OSError(%s): %s\n' % (self.abspath(file), errno, strerror)
 				continue
 
 			if stat.S_ISDIR(mode[stat.ST_MODE]):
@@ -227,7 +237,7 @@ class PCFileSystemModel(FileSystemModel):
 		return True
 	
 	def delete(self, file):
-		path = self.current_dir + '/' + file
+		path = self.abspath(file)
 		
 		mode = os.stat(path)
 		if stat.S_ISDIR(mode[stat.ST_MODE]):
@@ -237,7 +247,7 @@ class PCFileSystemModel(FileSystemModel):
 			os.remove(path)
 		
 	def exists(self, file):
-		return os.access(self.current_dir + '/' + file, os.F_OK)
+		return os.access(self.abspath(file), os.F_OK)
 		
 	def freeSpace(self):
 		cmd = 'df -P ' + '"' + self.current_dir + '"'
@@ -260,9 +270,9 @@ class PCFileSystemModel(FileSystemModel):
 		name = FileSystemModel.mkdir(self)
 			
 		if DEBUG:
-			print 'making directory: ', self.current_dir + '/' + name
+			print 'making directory: ', self.abspath(name)
 		
-		os.mkdir(self.current_dir + '/' + name)
+		os.mkdir(self.abspath(name))
 		
 		return name
 		
@@ -275,18 +285,16 @@ class PCFileSystemModel(FileSystemModel):
 			self.changeDir()
 			raise
 		
-		if DEBUG:
-			print 'renaming: ', self.current_dir + '/' + old, ' to ', self.current_dir + '/' + new
-			
-		os.rename(self.current_dir + '/' + old, self.current_dir + '/' + new)
+		os.rename(self.abspath(old), self.abspath(new))
 
 class PVRFileSystemModel(FileSystemModel):
 	def __init__(self, show_parent_dir=False):
 		FileSystemModel.__init__(self, show_parent_dir)
 
+		self.separator = '\\'
 		# FIXME: Get dir from when Guppy last exited
 		# We need to use an empty string to list the PVR root directory.
-		self.current_dir = '\\'
+		self.current_dir = self.separator
 
 		self.freespace = 0
 				
@@ -295,28 +303,26 @@ class PVRFileSystemModel(FileSystemModel):
 		self.dir_tree_lock = threading.Lock()
 
 		self.dir_tree = None
+		
 
 	def changeDir(self, dir=None):
 		"""Change directory and update model data accordingly.
 		"""
 		if dir:
 			# Append CWD if dir is not an absolute path
-			if dir[0] != '\\':
-				if self.current_dir[-1] != '\\':
-					dir = self.current_dir + '\\' + dir
-				else:
-					dir = self.current_dir + dir
+			if dir[0] != self.separator:
+				dir = self.abspath(dir)
 		else:
 			dir = self.current_dir
 
-		norm_path = os.path.normpath(dir.replace('\\', '/'))
+		norm_path = os.path.normpath(dir.replace(self.separator, '/'))
 		# norm_path is '.' when _dir_ is an empty string. _dir_ is an empty
 		# string for the PVR root directory.
 		# Also don't change dir when changing to '..' directory.
 		if norm_path == '.' or norm_path == '..':
-			dir = '\\'
+			dir = self.separator
 		else:
-			dir = norm_path.replace('/', '\\')
+			dir = norm_path.replace('/', self.separator)
 
 		dir_node = self.findDirectory(dir)
 		if dir_node == None:
@@ -348,7 +354,7 @@ class PVRFileSystemModel(FileSystemModel):
 
 	def delete(self, file):
 		print 'file = ', file
-		self.puppy.delete(self.current_dir + '\\' + file)
+		self.puppy.delete(self.abspath(file))
 
 	def exists(self, file):
 		pvr_files = self.puppy.listDir(self.current_dir)
@@ -392,8 +398,8 @@ class PVRFileSystemModel(FileSystemModel):
 		name = FileSystemModel.mkdir(self)
 			
 		if DEBUG:
-			print 'making directory: ', self.current_dir + '/' + name
-		self.puppy.makeDir(self.current_dir + '\\' + name)
+			print 'making directory: ', self.abspath(name)
+		self.puppy.makeDir(self.abspath(name))
 		
 	def rename(self, old, new, overwrite=False):
 		try:
@@ -405,7 +411,7 @@ class PVRFileSystemModel(FileSystemModel):
 			self.changeDir()
 			raise
 		
-		self.puppy.rename(self.current_dir + '/' + old, self.current_dir + '/' + new)
+		self.puppy.rename(self.abspath(old), self.abspath(new))
 		
 	def scanDirectory(self, dir):
 		"""Recursively scan a directory for all subdirectories and files.
