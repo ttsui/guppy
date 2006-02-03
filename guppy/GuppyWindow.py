@@ -184,16 +184,20 @@ class GuppyWindow:
 
 		# Action group for File TreeView popup menu		
 		self.file_actiongrp = gtk.ActionGroup('FileTreePopupAction')
-		self.file_actiongrp.add_actions([('Delete', gtk.STOCK_DELETE, _('_Delete'), None, None, self.on_delete_btn_clicked),
-		                                 ('Rename', None, _('_Rename'), None, None, self.on_rename_btn_clicked),
-										 ('MakeDir', None, _('Create _Folder'), None, None, self.on_mkdir_btn_clicked),
+		self.file_actiongrp.add_actions([('Delete', gtk.STOCK_DELETE, _('_Delete'), None, None, None),
+		                                 ('Rename', None, _('_Rename'), None, None, None),
+										 ('MakeDir', None, _('Create _Folder'), None, None, None),
 										 ])
 		self.uimanager.insert_action_group(self.file_actiongrp, 3)
 		
 		self.uimanager.add_ui_from_file(self.datadir + 'guppy-gtk.xml')
 
 		self.file_popup = self.uimanager.get_widget('/FileTreePopup')
+		self.file_popup_delete_btn = self.uimanager.get_widget('/FileTreePopup/Delete')
+		self.file_popup_mkdir_btn = self.uimanager.get_widget('/FileTreePopup/MakeDir')
 		self.file_popup_rename_btn = self.uimanager.get_widget('/FileTreePopup/Rename')
+		
+		self.file_popup.connect('selection-done', self.on_file_popup_done)
 
 	def customWidgetHandler(self, glade, func_name, widget_name, str1, str2, int1, int2, *args):
 		handler = getattr(self, func_name)
@@ -379,8 +383,8 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		col.set_sort_order(order)
 		data[0].set_sort_column_id(data[1], order)
 
-	def on_delete_btn_clicked(self, widget, data=None):
-		selection = self.active_treeview.get_selection()
+	def on_delete_btn_clicked(self, widget, treeview, fs_model):
+		selection = treeview.get_selection()
 		model, rows = selection.get_selected_rows()
 		
 		files = []
@@ -389,10 +393,22 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			name = model.get_value(iter, FileSystemModel.NAME_COL)
 			files.append(name)
 			
-		self.deleteFiles(files, self.active_fsmodel)
+		self.deleteFiles(files, fs_model)
 			
 	def on_download_btn_clicked(self, widget, data=None):
 		self.transferFile('download')
+
+	def on_file_popup_done(self, menushell):
+		# Disconnect popup menuitem handlers as it is reconnected in
+		# on_treeview_button_press().
+		
+		popup_widgets = [ self.file_popup_delete_btn, self.file_popup_mkdir_btn,
+		                  self.file_popup_rename_btn ]
+		
+		for widget in popup_widgets:
+			handler_id = widget.get_data('handler_id')
+			if widget.handler_is_connected(handler_id):
+				widget.disconnect(handler_id)
 
 	def on_goto_pc_dir(self, widget, data=None):
 		if self.pc_path_bar:
@@ -406,23 +422,23 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			self.pvr_path_entry_box.show()
 		self.pvr_path_entry.grab_focus()
 
-	def on_mkdir_btn_clicked(self, widget, data=None):
-		name = self.active_fsmodel.mkdir()
+	def on_mkdir_btn_clicked(self, widget, treeview, fs_model):
+		name = fs_model.mkdir()
 		
 		# Update model to get new folder
-		self.updateTreeViews(self.active_fsmodel)
+		self.updateTreeViews(fs_model)
 
 		# Get row for new folder		
-		model = self.active_treeview.get_model()
+		model = treeview.get_model()
 		for row in model:
 			if row[FileSystemModel.NAME_COL] == name:
 				# Select row for new folder
-				selection = self.active_treeview.get_selection()
+				selection = treeview.get_selection()
 				selection.unselect_all()
 				selection.select_path(row.path)
 				
 				# Rename new folder
-				self.on_rename_btn_clicked(widget)
+				self.on_rename_btn_clicked(widget, treeview, fs_model)
 				break
 		
 
@@ -544,16 +560,16 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			if self.last_file_transfer != None and self.last_file_transfer.isAlive():
 				self.last_file_transfer.setQuitAfterTransfer(True)
 
-	def on_rename_btn_clicked(self, widget, data=None):
-		selection = self.active_treeview.get_selection()
+	def on_rename_btn_clicked(self, widget, treeview, fs_model):
+		selection = treeview.get_selection()
 		model, files = selection.get_selected_rows()
 		
 		path = files[0]
 		iter = model.get_iter(path)
-		col = self.active_treeview.get_column(0)
+		col = treeview.get_column(0)
 		cells = col.get_cell_renderers()
 		cells[1].set_property('editable', True)
-		self.active_treeview.set_cursor(path, col, start_editing=True)
+		treeview.set_cursor(path, col, start_editing=True)
 					
 	def on_show_file_transfer_toggled(self, widget, data=None):
 		transfer_frame = self.glade_xml.get_widget('transfer_frame')
@@ -570,18 +586,33 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 	def on_treeview_button_press(self, treeview, event, fs_model):
 		if event.button == 3:
 			time = event.time
-			self.active_treeview = treeview
-			self.active_fsmodel = fs_model
-			
-			selection = self.active_treeview.get_selection()
+
+			selection = treeview.get_selection()
 			model, files = selection.get_selected_rows()
 			if len(files) == 1:
 				self.file_popup_rename_btn.set_sensitive(True)
 			else:
 				self.file_popup_rename_btn.set_sensitive(False)
 
-			#TODO connect signal handler for popup menu items here so we can pass in treeview and model
-			# instead of using a global variable
+			# Connect signal handler for each popup menuitem with the treeview
+			# and fs_model where the popup menu appeared.
+			handler_id = self.file_popup_delete_btn.connect('activate',
+			                                                self.on_delete_btn_clicked,
+			                                                treeview,
+			                                                fs_model)
+			self.file_popup_delete_btn.set_data('handler_id', handler_id)
+			
+			handler_id = self.file_popup_mkdir_btn.connect('activate',
+			                                               self.on_mkdir_btn_clicked,
+			                                               treeview,
+			                                               fs_model)
+			self.file_popup_mkdir_btn.set_data('handler_id', handler_id)
+
+			handler_id = self.file_popup_rename_btn.connect('activate',
+			                                                self.on_rename_btn_clicked,
+			                                                treeview,
+			                                                fs_model)
+			self.file_popup_rename_btn.set_data('handler_id', handler_id)
 
 			self.file_popup.popup( None, None, None, event.button, time)
 			
