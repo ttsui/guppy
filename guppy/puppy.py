@@ -50,6 +50,21 @@ class Puppy:
 		
 		return
 
+	def delete(self, filename):
+		args = ['-c', 'delete', filename]
+			
+		output_file = self._execute(args)
+
+		output = output_file.readlines()
+		output_file.close()
+		
+		print output
+		
+		if self.getStatus() != 0:
+			self._handleErrorOuput(output)
+		
+		return
+
 	def exists(self):
 		for path in os.environ['PATH'].split(':'):
 			if len(path) > 0 and os.access(path + '/puppy', os.F_OK):
@@ -88,34 +103,6 @@ class Puppy:
 
 		return total, free_space
 
-	def listDir(self, path=None):
-		args = ['-c', 'dir']
-		if path != None:
-			args.append(path)
-			
-		output_file = self._execute(args)
-
-		output = output_file.readlines()
-		output_file.close()
-
-		status = self.getStatus()	
-		if status == Puppy.E_GLOBAL_LOCK:
-			raise PuppyBusyError(str(output))
-		elif status != 0:
-			self._handleErrorOuput(output)
-		
-		listing = []
-		# Parse output of output_file and return it as a list
-		for line in output:
-			entry = line.split()
-			space = ' '
-			item = [ entry[0], space.join(entry[7:]),
-			         "%s %s %s %s" % (entry[2], entry[3], entry[4], entry[6]),
-			         entry[1] ]
-			listing.append(item)
-		
-		return listing
-		
 	# FIXME: Can getFile() be merged with putFile()
 	def getFile(self, src_file, dest_file=None):
 		args = ['-c', 'get', src_file]
@@ -130,68 +117,6 @@ class Puppy:
 		if status != 0 and status != -1:
 			self._handleErrorOuput(self.progress_output)
 			
-		return
-
-	def putFile(self, src_file, dest_file=None):
-		args = ['-c', 'put', src_file]
-		if dest_file != None:
-			args.append(dest_file)
-		else:
-			args.append(os.path.basename(src_file))
-			
-		self.progress_output = self._execute(args)
-		
-		status = self.getStatus(wait=False)
-		if status != 0 and status != -1:
-			self._handleErrorOuput(self.progress_output)
-			
-		return
-
-	def makeDir(self, dirname):
-		args = ['-c', 'mkdir', dirname]
-			
-		output_file = self._execute(args)
-
-		output = output_file.readlines()
-		output_file.close()
-		
-		# Parse output of output_file and return it as a list
-		
-		if self.getStatus() != 0:
-			self._handleErrorOuput(output)
-		
-		return
-
-	def rename(self, old_name, new_name):
-		args = ['-c', 'rename', old_name, new_name]
-			
-		output_file = self._execute(args)
-
-		output = output_file.readlines()
-		output_file.close()
-		
-		# Parse output of output_file and return it as a list
-		
-		if self.getStatus() != 0:
-			self._handleErrorOuput(output)
-		
-		return
-
-	def delete(self, filename):
-		print 'Puppy::delete(): filename = ', filename
-		args = ['-c', 'delete', filename]
-			
-		output_file = self._execute(args)
-
-		output = output_file.readlines()
-		output_file.close()
-		
-		print output
-		# Parse output of output_file and return it as a list
-		
-		if self.getStatus() != 0:
-			self._handleErrorOuput(output)
-		
 		return
 
 	def getProgress(self):
@@ -250,6 +175,95 @@ class Puppy:
 			
 		return status
 		
+	def listDir(self, path=None):
+		args = ['-c', 'dir']
+		if path != None:
+			args.append(path)
+			
+		output_file = self._execute(args)
+
+		output = output_file.readlines()
+		output_file.close()
+
+		status = self.getStatus()	
+		if status == Puppy.E_GLOBAL_LOCK:
+			raise PuppyBusyError(str(output))
+		elif status != 0:
+			self._handleErrorOuput(output)
+		
+		listing = []
+		# Parse output of output_file and return it as a list
+		for line in output:
+			entry = line.split()
+			space = ' '
+			item = [ entry[0], space.join(entry[7:]),
+			         "%s %s %s %s" % (entry[2], entry[3], entry[4], entry[6]),
+			         entry[1] ]
+			listing.append(item)
+		
+		return listing
+		
+	def makeDir(self, dirname):
+		args = ['-c', 'mkdir', dirname]
+			
+		output_file = self._execute(args)
+
+		output = output_file.readlines()
+		output_file.close()
+		
+		# XXX: Remove debug output
+		print output
+		
+		if self.getStatus() != 0:
+			self._handleErrorOuput(output)
+		
+		return
+
+	def putFile(self, src_file, dest_file=None):
+		args = ['-c', 'put', src_file]
+		if dest_file != None:
+			args.append(dest_file)
+		else:
+			args.append(os.path.basename(src_file))
+			
+		self.progress_output = self._execute(args)
+		
+		status = self.getStatus(wait=False)
+		if status != 0 and status != -1:
+			self._handleErrorOuput(self.progress_output)
+			
+		return
+
+	def rename(self, old_name, new_name):
+		args = ['-c', 'rename', old_name, new_name]
+
+		print 'args = ', args
+		output_file = self._execute(args)
+
+		output = output_file.readlines()
+		output_file.close()
+
+		# XXX: Remove debug output
+		print output
+		
+		if self.getStatus() != 0:
+			self._handleErrorOuput(output)
+		
+		return
+
+	def reset(self):	
+		args = ['-c', 'cancel']
+			
+		output_file = self._execute(args)
+
+		output = output_file.readlines()
+		output_file.close()
+		
+		if self.getStatus() != 0:
+			return False
+		
+		return True
+
 	def setTurbo(self, value):
 		args = ['-c', 'turbo']
 			
@@ -268,19 +282,6 @@ class Puppy:
 		
 		return
 			
-	def reset(self):	
-		args = ['-c', 'cancel']
-			
-		output_file = self._execute(args)
-
-		output = output_file.readlines()
-		output_file.close()
-		
-		if self.getStatus() != 0:
-			return False
-		
-		return True
-
 	def _anotherPuppyActive(self):
 		lock_file = open(Puppy.LOCK_FILE, 'a')
 		
