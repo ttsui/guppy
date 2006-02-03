@@ -23,6 +23,8 @@
 			<menuitem action="Quit"/>
 		</menu>
 		<menu action="View">
+			<menuitem action="Reload"/>
+			<separator/>
 			<menuitem action="ShowFileTransfer"/>
 			<menuitem action="ShowHidden"/>
 			<separator/>

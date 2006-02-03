@@ -153,7 +153,8 @@ class GuppyWindow:
                                  ('About', gtk.STOCK_ABOUT , _('_About'), None, None, self.on_about)])
 
 		actiongroup.add_actions([('GotoPCDir', None, _('Goto PC Location'), '<Ctrl>l', None, self.on_goto_pc_dir),
-		                         ('GotoPVRDir', None, _('Goto PVR Location'), '<Ctrl>k', None, self.on_goto_pvr_dir)])
+		                         ('GotoPVRDir', None, _('Goto PVR Location'), '<Ctrl>k', None, self.on_goto_pvr_dir),
+		                         ('Reload', gtk.STOCK_REFRESH, _('Reload folders'), '<Ctrl>r', None, self.on_reload_dir)])
 			                         
 		# FIXME: Use a proper icon for Turbo button
 		actiongroup.add_toggle_actions([('Turbo', gtk.STOCK_EXECUTE, _('Tur_bo'), '<Ctrl>t', _('Turbo Transfer'), self.on_turbo_toggled),
@@ -560,6 +561,9 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			if self.last_file_transfer != None and self.last_file_transfer.isAlive():
 				self.last_file_transfer.setQuitAfterTransfer(True)
 
+	def on_reload_dir(self, widget, data=None):
+		self.updateTreeViews()
+		
 	def on_rename_btn_clicked(self, widget, treeview, fs_model):
 		selection = treeview.get_selection()
 		model, files = selection.get_selected_rows()
