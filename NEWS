@@ -1,4 +1,16 @@
+guppy-0.0.90: ? Feb 2006
+	- New file management features
+	     o Delete files/directories
+	     o Rename files/directories
+	     o Make directories
+	- New PVR error reporting user interface
+	- Add Reload Folders to View menu
+	- Fix bug with 'df' output which span more than a single line (thanks
+	  to David Spall and Ian Stewart)
+	- Use new icon for turbo button
+
 guppy-0.0.6.1: 7 Jan 2006
+	- Handle multiple lines from "df" output.
 	- Handle multiple lines from "df" output.
 
 guppy-0.0.6: 30 Dec 2005
