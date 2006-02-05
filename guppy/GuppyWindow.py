@@ -58,16 +58,24 @@ class GuppyWindow:
 		self.glade_file = self.datadir + '/' + 'guppy.glade'
 
 		self.pvr_error_window = PVRErrorWindow(self.glade_file)
-		
-		self.initUIManager()
 
+		actions = self.initUIManager()
+
+		# This must be done before loading the glade file.
 		gtk.glade.set_custom_handler(self.customWidgetHandler)
-
+		
 		# Load glade file
 		self.glade_xml = gtk.glade.XML(self.glade_file, None, gettext.textdomain())
 		
 		# Connect callback functions in glade file to functions
 		self.glade_xml.signal_autoconnect(self)
+		
+		# Connect buttons in toolbar to their respective action
+		for action, widget in [ (actions['turbo'], 'turbo_btn'),
+		                (actions['upload'], 'upload_btn'),
+						(actions['download'], 'download_btn') ]:
+			btn = self.glade_xml.get_widget(widget)
+			action.connect_proxy(btn)
 		
 		accelgroup = self.uimanager.get_accel_group()
 		window = self.glade_xml.get_widget('guppy_window')
@@ -141,6 +149,12 @@ class GuppyWindow:
 		self.quit_after_transfer = False
 		
 	def initUIManager(self):
+		"""Initialise the UIManager.
+		
+		Return: Dictionary with all actions for the toolbar.
+		"""
+		actions = {}
+		
 		self.uimanager = gtk.UIManager()
 				
 		actiongroup = gtk.ActionGroup('Actions')
@@ -156,11 +170,15 @@ class GuppyWindow:
 		                         ('GotoPVRDir', None, _('Goto PVR Location'), '<Ctrl>k', None, self.on_goto_pvr_dir),
 		                         ('Reload', gtk.STOCK_REFRESH, _('Reload folders'), '<Ctrl>r', None, self.on_reload_dir)])
 			                         
-		actiongroup.add_toggle_actions([('Turbo', None, _('Tur_bo'), '<Ctrl>t', _('Turbo Transfer'), self.on_turbo_toggled),
-									    ('QuitAfterTransfer', None, _('Quit After Transfer'), None, None, self.on_quit_after_transfer),
+		actiongroup.add_toggle_actions([('QuitAfterTransfer', None, _('Quit After Transfer'), None, None, self.on_quit_after_transfer),
 		                                ('ShowHidden', None, _('Show Hidden Files'), None, _('Show hidden files'), self.on_show_hidden_toggled),
 		                                ('ShowFileTransfer', None, _('Show File Transfer'), None, _('Show File Transfer'), self.on_show_file_transfer_toggled)])
 
+		turbo_act = gtk.ToggleAction('Turbo', _('Tur_bo'), _('Turbo Transfer'), None)
+		turbo_act.connect('toggled', self.on_turbo_toggled)
+		actiongroup.add_action_with_accel(turbo_act, '<Ctrl>t')
+		actions['turbo'] = turbo_act
+		
 		# Create reference to ShowFileTransfer action so we can update the
 		# toggle state accordingly when the transfer frame close button is
 		# clicked.
@@ -171,14 +189,25 @@ class GuppyWindow:
 		# Create separate action group for upload so sensitivity can be set
 		# according to selection in PC file tree
 		self.upload_actiongrp = gtk.ActionGroup('UploadAction')                                 
-		self.upload_actiongrp.add_actions([('Upload', gtk.STOCK_GO_BACK, _('_Upload'), '<Ctrl>u', _('Upload File'), self.on_upload_btn_clicked)])
+
+		upload_act = gtk.Action('Upload',  _('_Upload'), _('Upload File'), gtk.STOCK_GO_BACK)
+		upload_act.connect('activate', self.on_upload_btn_clicked)
+		self.upload_actiongrp.add_action_with_accel(upload_act, '<Ctrl>u')
+		actions['upload'] = upload_act
+
 		self.upload_actiongrp.set_sensitive(False)
 		self.uimanager.insert_action_group(self.upload_actiongrp, 1)
 
 		# Create separate action group for download so sensitivity can be set
 		# according to selection in PVR file tree
 		self.download_actiongrp = gtk.ActionGroup('DownloadAction')                                 
-		self.download_actiongrp.add_actions([('Download', gtk.STOCK_GO_FORWARD, _('_Download'), '<Ctrl>d', _('Download File'), self.on_download_btn_clicked)])
+		
+		download_act = gtk.Action('Download', _('_Download'), _('Download File'), gtk.STOCK_GO_FORWARD)
+		download_act.connect('activate', self.on_download_btn_clicked)
+		self.download_actiongrp.add_action_with_accel(download_act, '<Ctrl>d')
+		actions['download'] = download_act
+		
+		
 		self.download_actiongrp.set_sensitive(False)
 		self.uimanager.insert_action_group(self.download_actiongrp, 2)
 
@@ -198,14 +227,8 @@ class GuppyWindow:
 		self.file_popup_rename_btn = self.uimanager.get_widget('/FileTreePopup/Rename')
 		
 		self.file_popup.connect('selection-done', self.on_file_popup_done)
-
-		# Set icon for turbo button
-		img = gtk.Image()
-		img.set_from_file(self.datadir + 'rocket.png')
-		img.show()
-		btn = self.uimanager.get_widget('/Toolbar/Turbo')
-		btn.set_icon_widget(img)
-
+		
+		return actions
 
 	def customWidgetHandler(self, glade, func_name, widget_name, str1, str2, int1, int2, *args):
 		handler = getattr(self, func_name)
@@ -753,7 +776,15 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			model, files = self.pc_treeview.get_selection().get_selected_rows()
 			direction_text = _('Uploading')
 			selection_size = self.pc_total_size_label.get_text().split(':')[1]
-			free_space = self.pvr_model.freeSpace()
+			try:
+				free_space = self.pvr_model.freeSpace()
+			except PuppyError, error:
+				self.pvr_error_btn.show()
+				self.pvr_error_window.addError(_('Failed to get free disk space on PVR'), error)
+				
+				# Assume there is enough space on the PVR
+				free_space = selection_size
+				pass
 
 		# Check for enough free disk space
 		selection_size = convertToBytes(selection_size)
