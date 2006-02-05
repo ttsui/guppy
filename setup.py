@@ -79,6 +79,7 @@ data_files = [
 	('share/doc/guppy', ('AUTHORS', 'COPYING', 'README', 'NEWS')),
 	('share/guppy', listfiles('guppy', '*.glade')),
 	('share/guppy', listfiles('guppy', '*.xml')),
+	('share/guppy', listfiles('guppy', '*.png')),
 	]
 
 scripts = ['guppy/guppy']

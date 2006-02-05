@@ -156,8 +156,7 @@ class GuppyWindow:
 		                         ('GotoPVRDir', None, _('Goto PVR Location'), '<Ctrl>k', None, self.on_goto_pvr_dir),
 		                         ('Reload', gtk.STOCK_REFRESH, _('Reload folders'), '<Ctrl>r', None, self.on_reload_dir)])
 			                         
-		# FIXME: Use a proper icon for Turbo button
-		actiongroup.add_toggle_actions([('Turbo', gtk.STOCK_EXECUTE, _('Tur_bo'), '<Ctrl>t', _('Turbo Transfer'), self.on_turbo_toggled),
+		actiongroup.add_toggle_actions([('Turbo', None, _('Tur_bo'), '<Ctrl>t', _('Turbo Transfer'), self.on_turbo_toggled),
 									    ('QuitAfterTransfer', None, _('Quit After Transfer'), None, None, self.on_quit_after_transfer),
 		                                ('ShowHidden', None, _('Show Hidden Files'), None, _('Show hidden files'), self.on_show_hidden_toggled),
 		                                ('ShowFileTransfer', None, _('Show File Transfer'), None, _('Show File Transfer'), self.on_show_file_transfer_toggled)])
@@ -199,6 +198,14 @@ class GuppyWindow:
 		self.file_popup_rename_btn = self.uimanager.get_widget('/FileTreePopup/Rename')
 		
 		self.file_popup.connect('selection-done', self.on_file_popup_done)
+
+		# Set icon for turbo button
+		img = gtk.Image()
+		img.set_from_file(self.datadir + 'rocket.png')
+		img.show()
+		btn = self.uimanager.get_widget('/Toolbar/Turbo')
+		btn.set_icon_widget(img)
+
 
 	def customWidgetHandler(self, glade, func_name, widget_name, str1, str2, int1, int2, *args):
 		handler = getattr(self, func_name)
