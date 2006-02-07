@@ -462,6 +462,15 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 	def on_mkdir_btn_clicked(self, widget, treeview, fs_model):
 		try:
 			name = fs_model.mkdir()
+		except OSError:
+			msg = '<b>' + _('Error while creating folder.') + '</b>\n\n'
+			msg += _('Can not create folder because you do not have permission to write in its parent folder.')
+			dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_CLOSE)
+			dialog.set_markup(msg)
+			response = dialog.run()
+			dialog.destroy()
+
+			return
 		except PuppyError, error:
 			self.pvr_error_btn.show()
 			self.pvr_error_window.addError(_('Failed to make a folder'), error)
