@@ -1,4 +1,4 @@
-guppy-0.0.90: ? Feb 2006
+guppy-0.0.90: 7 Feb 2006
 	- New file management features
 	     o Delete files/directories
 	     o Rename files/directories
