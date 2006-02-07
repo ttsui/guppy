@@ -52,7 +52,7 @@ class Puppy:
 
 	def delete(self, filename):
 		args = ['-c', 'delete', filename]
-			
+		
 		output_file = self._execute(args)
 
 		output = output_file.readlines()
@@ -253,8 +253,11 @@ class Puppy:
 
 	def reset(self):	
 		args = ['-c', 'cancel']
-			
-		output_file = self._execute(args)
+		
+		try:	
+			output_file = self._execute(args)
+		except PuppyBusyError:
+			return False
 
 		output = output_file.readlines()
 		output_file.close()
