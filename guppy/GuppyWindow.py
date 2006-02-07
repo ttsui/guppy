@@ -359,6 +359,12 @@ class GuppyWindow:
 				
 					# Try to delete again
 					continue
+				except PuppyError, error:
+					self.pvr_error_btn.show()
+					self.pvr_error_window.addError(_('Failed to delete') + ' ' + name, error)
+					
+					deleted = True
+					continue
 
 		self.updateTreeViews(fs_model)
 		self.updateFreeSpace(fs_model)
@@ -454,7 +460,12 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		self.pvr_path_entry.grab_focus()
 
 	def on_mkdir_btn_clicked(self, widget, treeview, fs_model):
-		name = fs_model.mkdir()
+		try:
+			name = fs_model.mkdir()
+		except PuppyError, error:
+			self.pvr_error_btn.show()
+			self.pvr_error_window.addError(_('Failed to make a folder'), error)
+		
 		
 		# Update model to get new folder
 		self.updateTreeViews(fs_model)
@@ -505,7 +516,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 						retval = False
 						break
 				
-					# Try to delete again
+					# Try to rename again
 					continue
 				elif str(error).find('Errno 17') != -1:
 					CANCEL, REPLACE = range(2)
@@ -526,6 +537,9 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 					
 					if not deleted:
 						break
+			except PuppyError, error:
+				self.pvr_error_btn.show()
+				self.pvr_error_window.addError(_('Failed to rename') + ' ' + old_name, error)
 		
 		self.updateTreeViews(fs_model)
 
@@ -780,7 +794,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 				free_space = self.pvr_model.freeSpace()
 			except PuppyError, error:
 				self.pvr_error_btn.show()
-				self.pvr_error_window.addError(_('Failed to get free disk space on PVR'), error)
+				self.pvr_error_window.addError(_('Failed to get free disk space'), error)
 				
 				# Assume there is enough space on the PVR
 				free_space = selection_size
@@ -909,7 +923,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			raise
 		except PuppyError, error:
 			self.pvr_error_btn.show()
-			self.pvr_error_window.addError(_('Failed to get free disk space on PVR'), error)
+			self.pvr_error_window.addError(_('Failed to get free disk space'), error)
 			pass
 			
 		if fs_model == self.pc_model or fs_model == None:
@@ -970,7 +984,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 					raise
 				except PuppyError, error:
 					self.pvr_error_btn.show()
-					self.pvr_error_window.addError(_('Failed to get list of files on PVR'), error)
+					self.pvr_error_window.addError(_('Failed to get list of files'), error)
 					pass
 
 			model.changeDir()
