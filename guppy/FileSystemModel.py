@@ -450,7 +450,6 @@ class PVRFileSystemModel(FileSystemModel):
 			try:
 				new_dir_tree = self.scanDirectory('')
 			except PuppyBusyError:
-				print 'updateCache(): Exception: PuppyBusyError'
 				# Sleep for 1 second before trying again
 				time.sleep(1)
 			except PuppyError:
