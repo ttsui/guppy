@@ -1020,6 +1020,7 @@ class PVRErrorWindow:
 		self.glade_file = glade_file		
 		self.error_window = glade_xml.get_widget('pvr_error_window')
 		self.pvr_error_output = glade_xml.get_widget('pvr_error_output')
+		self.pvr_error_box = glade_xml.get_widget('pvr_error_box')
 
 		self.liststore = gtk.ListStore(PVRErrorWindow.LIST_TYPES[PVRErrorWindow.ICON_COL],
 		                               PVRErrorWindow.LIST_TYPES[PVRErrorWindow.ICON_SIZE_COL],
@@ -1047,6 +1048,15 @@ class PVRErrorWindow:
 		
 		self.liststore.append([gtk.STOCK_DIALOG_ERROR, gtk.ICON_SIZE_DIALOG, error_msg, error_output])
 
+	def on_expander_activate(self, widget):
+		if widget.get_property('expanded'):
+			box_expand = False
+		else:
+			box_expand = True
+			
+		self.pvr_error_box.set_child_packing(widget, box_expand, True, 0,
+		                                     gtk.PACK_START)
+		
 	def on_pvr_error_treeview_changed(self, widget):
 		model, iter = widget.get_selected()
 		if iter == None:
