@@ -451,6 +451,7 @@ class PVRFileSystemModel(FileSystemModel):
 				new_dir_tree = self.scanDirectory('')
 			except PuppyBusyError:
 				# Sleep for 1 second before trying again
+			break
 				time.sleep(1)
 			except PuppyError:
 				self.dir_tree_lock.release()
