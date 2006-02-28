@@ -198,10 +198,14 @@ class Puppy:
 			entry = line.split()
 
 			# Convert from Toppy's code page of ISO-8859-1 to UTF-8
-			filename = unicode(space.join(entry[7:]), 'iso8859-1')
+			# FIXME: Toppy may not always be ISO-8859-1. How do we find out
+			#        what encoding to use?
+			filename = unicode(space.join(entry[7:]), 'iso8859-1', 'replace')
 			filename = filename.encode('utf-8')
 
-			date = unicode("%s %s %s %s" % (entry[2], entry[3], entry[4], entry[6]), 'iso8859-1')
+			date = unicode("%s %s %s %s" % (entry[2], entry[3], entry[4],
+			                                entry[6]),
+			               'iso8859-1', 'replace')
 			date = date.encode('utf-8')
 
 			item = [ entry[0], filename, date, entry[1] ]
