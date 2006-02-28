@@ -648,8 +648,10 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			model, files = selection.get_selected_rows()
 			if len(files) == 1:
 				self.file_popup_rename_btn.set_sensitive(True)
+				self.file_popup_delete_btn.set_sensitive(True)
 			else:
 				self.file_popup_rename_btn.set_sensitive(False)
+				self.file_popup_delete_btn.set_sensitive(False)
 
 			# Connect signal handler for each popup menuitem with the treeview
 			# and fs_model where the popup menu appeared.
