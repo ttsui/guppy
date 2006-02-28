@@ -263,6 +263,7 @@ class GuppyWindow:
 			sort_func = fs_model.sort_func
 			liststore.set_default_sort_func(sort_func, FileSystemModel.NAME_COL)
 
+			treeview.set_search_column(FileSystemModel.NAME_COL)
 			treeview.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
 			
 			treeview.connect('row-activated',
