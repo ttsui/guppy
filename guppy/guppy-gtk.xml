@@ -31,17 +31,15 @@
 			<menuitem action="GotoPCDir"/>
 			<menuitem action="GotoPVRDir"/>
 		</menu>
+		<menu action="Transfer">
+			<menuitem action="Turbo"/>
+			<menuitem action="Upload"/>
+			<menuitem action="Download"/>
+		</menu>
 		<menu action="Help">
 			<menuitem action="About"/>
 		</menu>
 	</menubar>
-	<toolbar name="Toolbar">
-		<toolitem action="Download"/>
-		<separator/>
-		<toolitem action="Turbo"/>
-		<separator/>
-		<toolitem action="Upload"/>
-	</toolbar>
 	<popup name="FileTreePopup">
 		<menuitem action="Delete"/>
 		<menuitem action="Rename"/>
