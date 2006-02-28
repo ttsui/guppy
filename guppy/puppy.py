@@ -193,12 +193,18 @@ class Puppy:
 		
 		listing = []
 		# Parse output of output_file and return it as a list
+		space = ' '
 		for line in output:
 			entry = line.split()
-			space = ' '
-			item = [ entry[0], space.join(entry[7:]),
-			         "%s %s %s %s" % (entry[2], entry[3], entry[4], entry[6]),
-			         entry[1] ]
+
+			# Convert from Toppy's code page of ISO-8859-1 to UTF-8
+			filename = unicode(space.join(entry[7:]), 'iso8859-1')
+			filename = filename.encode('utf-8')
+
+			date = unicode("%s %s %s %s" % (entry[2], entry[3], entry[4], entry[6]), 'iso8859-1')
+			date = date.encode('utf-8')
+
+			item = [ entry[0], filename, date, entry[1] ]
 			listing.append(item)
 		
 		return listing
