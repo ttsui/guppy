@@ -363,9 +363,7 @@ class GuppyWindow:
 				except PuppyError, error:
 					self.pvr_error_btn.show()
 					self.pvr_error_window.addError(_('Failed to delete') + ' ' + name, error)
-					
-					deleted = True
-					continue
+					break
 
 		self.updateTreeViews(fs_model, True)
 		self.updateFreeSpace(fs_model)
@@ -475,6 +473,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		except PuppyError, error:
 			self.pvr_error_btn.show()
 			self.pvr_error_window.addError(_('Failed to make a folder'), error)
+			return
 		
 		# Update model to get new folder
 		self.updateTreeViews(fs_model, True)
@@ -549,6 +548,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			except PuppyError, error:
 				self.pvr_error_btn.show()
 				self.pvr_error_window.addError(_('Failed to rename') + ' ' + old_name, error)
+				break
 		
 		self.updateTreeViews(fs_model, True)
 
