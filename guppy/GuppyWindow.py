@@ -367,7 +367,7 @@ class GuppyWindow:
 					deleted = True
 					continue
 
-		self.updateTreeViews(fs_model)
+		self.updateTreeViews(fs_model, True)
 		self.updateFreeSpace(fs_model)
 		
 		return retval
@@ -476,10 +476,9 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			self.pvr_error_btn.show()
 			self.pvr_error_window.addError(_('Failed to make a folder'), error)
 		
-		
 		# Update model to get new folder
-		self.updateTreeViews(fs_model)
-
+		self.updateTreeViews(fs_model, True)
+		
 		# Get row for new folder		
 		model = treeview.get_model()
 		for row in model:
@@ -551,7 +550,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 				self.pvr_error_btn.show()
 				self.pvr_error_window.addError(_('Failed to rename') + ' ' + old_name, error)
 		
-		self.updateTreeViews(fs_model)
+		self.updateTreeViews(fs_model, True)
 
 	def on_name_cell_editing_cancelled(self, cell, data=None):
 		# Set editable to False so users can't edit the cell by clicking on it.
@@ -968,7 +967,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		return True
 	
 
-	def updateTreeViews(self, fs_model=None):
+	def updateTreeViews(self, fs_model=None, cur_dir_only=False):
 		# Update FileSystemModel view
 		if fs_model == self.pc_model:
 			models = [ (self.pc_model, self.pc_treeview) ]
@@ -989,7 +988,10 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			# Update PVR file system cache
 			if isinstance(model, PVRFileSystemModel):
 				try:
-					model.updateCache()
+					if cur_dir_only:
+						model.updateDirectory(model.getCWD())
+					else:
+						model.updateCache()
 				except PuppyNoPVRError:
 					raise
 				except PuppyError, error:

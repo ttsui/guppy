@@ -452,6 +452,7 @@ class PVRFileSystemModel(FileSystemModel):
 			except PuppyBusyError:
 				# Sleep for 1 second before trying again
 				time.sleep(1)
+				continue
 			except PuppyError:
 				self.dir_tree_lock.release()
 				raise
@@ -467,6 +468,60 @@ class PVRFileSystemModel(FileSystemModel):
 		
 		if DEBUG:
 			print 'End updateCache()'
+
+	def updateDirectory(self, dir):
+		"""Update the directory node in the directory tree.
+		
+		"""
+		if DEBUG:
+			print 'Start updateDirectory(%s)' % (dir)
+			
+		# Remove separator at end of path
+		if dir[-1] == self.separator:
+			dir = dir[:-1]
+			
+		self.dir_tree_lock.acquire()
+
+		# Get components of directory path as a list
+		path = dir.split('\\')
+		
+		# Find parent node		
+		parent_node = self.dir_tree
+		for name in path[:-1]:
+			if len(name) == 0:
+				continue
+			par_node, node_info = parent_node.getDirectory(name)
+			if parent_node == None:
+				break
+				
+		cur_node, node_info = parent_node.getDirectory(path[-1])
+		
+		new_node = None
+		# Attempt to update cache twice in case puppy was busy the first time
+		for i in xrange(2):
+			try:
+				new_node = self.scanDirectory(dir)
+			except PuppyBusyError:
+				# Sleep for 1 second before trying again
+				time.sleep(1)
+				continue
+			except PuppyError:
+				self.dir_tree_lock.release()
+				raise
+			break
+
+		# Failed to update cache. Use existing node.
+		if new_node == None:
+			new_node = cur_node
+
+		# Replace wit new node
+		parent_node.addDirectory(new_node, node_info)
+		
+		self.dir_tree_lock.release()
+		
+		if DEBUG:
+			print 'End updateDirectory()'
+		
 
 class DirectoryNode:
 	def __init__(self, name):
@@ -511,3 +566,10 @@ class DirectoryNode:
 	def getFiles(self):
 		return copy.deepcopy(self.files)
 		
+	def print_tree(self):
+		print '\t' + self.name
+		for node, info in self.sub_directories.itervalues():
+			node.print_tree()
+			
+		for file in self.files:
+			print file
