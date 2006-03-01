@@ -297,7 +297,7 @@ class GuppyWindow:
 			col.pack_start(pixb_cell, False)
 			col.pack_start(text_cell, True)
 			col.set_attributes(text_cell, text=FileSystemModel.NAME_COL)
-			col.set_attributes(pixb_cell, stock_id=FileSystemModel.ICON_COL)
+			col.set_attributes(pixb_cell, pixbuf=FileSystemModel.ICON_COL)
 			col.set_clickable(True)
 			col.set_resizable(True)
 			col.set_sort_indicator(True)

@@ -35,10 +35,30 @@ class FileSystemModel(gtk.ListStore):
 	TYPE_COL, ICON_COL, NAME_COL, DATE_COL, SIZE_COL = range(5)
 	LIST_TYPES = []
 	LIST_TYPES.insert(TYPE_COL, gobject.TYPE_STRING)
-	LIST_TYPES.insert(ICON_COL, gobject.TYPE_STRING)
+	LIST_TYPES.insert(ICON_COL, gtk.gdk.Pixbuf)
 	LIST_TYPES.insert(NAME_COL, gobject.TYPE_STRING)
 	LIST_TYPES.insert(DATE_COL, gobject.TYPE_STRING)
 	LIST_TYPES.insert(SIZE_COL, gobject.TYPE_STRING)
+
+	img = gtk.Image()
+	file_icon = img.render_icon(gtk.STOCK_FILE, gtk.ICON_SIZE_LARGE_TOOLBAR)
+	video_icon = gtk.gdk.pixbuf_new_from_file('video.png')
+
+	icon_theme = gtk.icon_theme_get_default()
+	try:
+		settings = gtk.settings_get_for_screen(img.get_screen())
+		icon_size = gtk.icon_size_lookup_for_settings(settings, gtk.ICON_SIZE_LARGE_TOOLBAR)
+		if icon_size:
+			icon_size = max(icon_size[0], icon_size[1])
+		else:
+			icon_size = 24
+
+		dir_icon = icon_theme.load_icon('folder', icon_size, gtk.ICON_LOOKUP_USE_BUILTIN)
+		if dir_icon == None:
+			dir_icon = img.render_icon(gtk.STOCK_DIRECTORY, gtk.ICON_SIZE_LARGE_TOOLBAR)
+			
+	except gobject.GError, exc:
+		dir_icon = img.render_icon(gtk.STOCK_DIRECTORY, gtk.ICON_SIZE_LARGE_TOOLBAR)
 
 	def __init__(self, show_parent_dir=False):
 		self.current_dir = None
@@ -213,7 +233,7 @@ class PCFileSystemModel(FileSystemModel):
 		# Parent directory
 		if self.show_parent_dir:
 			self.append(['d', gtk.STOCK_DIRECTORY, '..', '', ''])
-		
+
 		for file in os.listdir(self.current_dir):
 			try:
 				mode = os.stat(self.abspath(file))
@@ -223,11 +243,14 @@ class PCFileSystemModel(FileSystemModel):
 
 			if stat.S_ISDIR(mode[stat.ST_MODE]):
 				type = 'd'
-				icon = gtk.STOCK_DIRECTORY
+				icon = self.dir_icon
 				size = ''
 			else:
 				type = 'f'
-				icon = gtk.STOCK_FILE
+				if file[-4:] == '.rec':
+					icon = FileSystemModel.video_icon
+				else:
+					icon = FileSystemModel.file_icon
 				size = humanReadableSize(mode[stat.ST_SIZE])
 			
 			mtime = time.strftime('%a %b %d %Y', time.localtime(mode[stat.ST_MTIME]))
@@ -334,16 +357,21 @@ class PVRFileSystemModel(FileSystemModel):
 		if len(self) > 0:
 			self.clear()
 
-		for file_name, file_info in dir_node.getFiles():  
-			file_info.insert(FileSystemModel.ICON_COL, gtk.STOCK_FILE)
+		for file_name, file_info in dir_node.getFiles():
+			if file_name[-4:] == '.rec':
+				icon = FileSystemModel.video_icon		
+			else:
+				icon = FileSystemModel.file_icon
+				
+			file_info.insert(FileSystemModel.ICON_COL, icon)
 		
 			file_info[FileSystemModel.SIZE_COL] = humanReadableSize(int(file_info[FileSystemModel.SIZE_COL]))
 			
 			self.append(file_info)
 			
 		for dir, dir_info in dir_node.getDirectories():
-			dir_info.insert(FileSystemModel.ICON_COL, gtk.STOCK_DIRECTORY)
-		
+			dir_info.insert(FileSystemModel.ICON_COL, FileSystemModel.dir_icon)
+			
 			dir_info[FileSystemModel.SIZE_COL] = humanReadableSize(int(dir_info[FileSystemModel.SIZE_COL]))
 			
 			self.append(dir_info)
