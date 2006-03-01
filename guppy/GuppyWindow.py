@@ -556,6 +556,13 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		# Set editable to False so users can't edit the cell by clicking on it.
 		cell.set_property('editable', False)
 
+	def on_no_file_ops_clicked(self, widget, treeview, model):
+		dialog = gtk.MessageDialog(message_format=_('It is not possible to delete, rename, or create folders on the PVR during a file transfer.'),
+		                           type=gtk.MESSAGE_ERROR,
+		                           buttons=gtk.BUTTONS_CLOSE)
+		dialog.run()
+		dialog.destroy()
+
 	def on_path_entry_activate(self, widget, fs_model):
 		path = widget.get_text()
 
@@ -653,26 +660,23 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 				self.file_popup_rename_btn.set_sensitive(False)
 				self.file_popup_delete_btn.set_sensitive(False)
 
+			btns = [ (self.file_popup_delete_btn, self.on_delete_btn_clicked),
+			         (self.file_popup_rename_btn, self.on_rename_btn_clicked),
+			         (self.file_popup_mkdir_btn, self.on_mkdir_btn_clicked) ]
+
 			# Connect signal handler for each popup menuitem with the treeview
 			# and fs_model where the popup menu appeared.
-			handler_id = self.file_popup_delete_btn.connect('activate',
-			                                                self.on_delete_btn_clicked,
-			                                                treeview,
-			                                                fs_model)
-			self.file_popup_delete_btn.set_data('handler_id', handler_id)
-			
-			handler_id = self.file_popup_mkdir_btn.connect('activate',
-			                                               self.on_mkdir_btn_clicked,
-			                                               treeview,
-			                                               fs_model)
-			self.file_popup_mkdir_btn.set_data('handler_id', handler_id)
-
-			handler_id = self.file_popup_rename_btn.connect('activate',
-			                                                self.on_rename_btn_clicked,
-			                                                treeview,
-			                                                fs_model)
-			self.file_popup_rename_btn.set_data('handler_id', handler_id)
-
+			for btn, callback in btns:
+				# It isn't possible to do file operations during a file transfer
+				if self.transfer_thread.isActive() and isinstance(fs_model, PVRFileSystemModel):
+					callback = self.on_no_file_ops_clicked
+				
+				handler_id = btn.connect('activate',
+				                         callback,
+				                         treeview,
+				                         fs_model)
+				btn.set_data('handler_id', handler_id)
+				
 			self.file_popup.popup( None, None, None, event.button, time)
 			
 			# Return True so row selection doesn't get changed.
@@ -1118,7 +1122,12 @@ class TransferThread(threading.Thread):
 		self.guppy = guppy
 		self.file_queue = self.guppy.transfer_queue
 		self.complete_queue = self.guppy.transfer_complete_queue
-
+		
+		self.active = False
+		
+	def isActive(self):
+		return self.active
+	
 	def run(self):
 		while True:
 				
@@ -1134,6 +1143,8 @@ class TransferThread(threading.Thread):
 			if not file_transfer.isAlive():
 				continue
 
+			self.active = True
+			
 			direction = file_transfer.direction
 			src_file = file_transfer.src
 			dst_file = file_transfer.dst
@@ -1263,6 +1274,8 @@ class TransferThread(threading.Thread):
 			
 			# Put on queue for completed transfers
 			self.complete_queue.put(file_transfer)
+			
+			self.active = False
 			
 			if file_transfer.getQuitAfterTransfer():
 				gtk.gdk.threads_enter()
