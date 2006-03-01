@@ -659,9 +659,12 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			model, files = selection.get_selected_rows()
 			if len(files) == 1:
 				self.file_popup_rename_btn.set_sensitive(True)
-				self.file_popup_delete_btn.set_sensitive(True)
 			else:
 				self.file_popup_rename_btn.set_sensitive(False)
+				
+			if len(files) >= 1:
+				self.file_popup_delete_btn.set_sensitive(True)
+			else:
 				self.file_popup_delete_btn.set_sensitive(False)
 
 			btns = [ (self.file_popup_delete_btn, self.on_delete_btn_clicked),
