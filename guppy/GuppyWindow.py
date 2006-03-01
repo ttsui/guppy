@@ -360,6 +360,9 @@ class GuppyWindow:
 				
 					# Try to delete again
 					continue
+				except PuppyBusyError:
+					self.showNoFileOperationDialog()
+					return
 				except PuppyError, error:
 					self.pvr_error_btn.show()
 					self.pvr_error_window.addError(_('Failed to delete') + ' ' + name, error)
@@ -470,6 +473,9 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			dialog.destroy()
 
 			return
+		except PuppyBusyError:
+			self.showNoFileOperationDialog()
+			return
 		except PuppyError, error:
 			self.pvr_error_btn.show()
 			self.pvr_error_window.addError(_('Failed to make a folder'), error)
@@ -556,13 +562,6 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		# Set editable to False so users can't edit the cell by clicking on it.
 		cell.set_property('editable', False)
 
-	def on_no_file_ops_clicked(self, widget, treeview, model):
-		dialog = gtk.MessageDialog(message_format=_('It is not possible to delete, rename, or create folders on the PVR during a file transfer.'),
-		                           type=gtk.MESSAGE_ERROR,
-		                           buttons=gtk.BUTTONS_CLOSE)
-		dialog.run()
-		dialog.destroy()
-
 	def on_path_entry_activate(self, widget, fs_model):
 		path = widget.get_text()
 
@@ -625,6 +624,11 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		self.updateTreeViews()
 		
 	def on_rename_btn_clicked(self, widget, treeview, fs_model):
+		# Fail rename if a transfer is in progress
+		if self.puppy.isActive():
+			self.showNoFileOperationDialog()
+			return
+		
 		selection = treeview.get_selection()
 		model, files = selection.get_selected_rows()
 		
@@ -667,10 +671,6 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			# Connect signal handler for each popup menuitem with the treeview
 			# and fs_model where the popup menu appeared.
 			for btn, callback in btns:
-				# It isn't possible to do file operations during a file transfer
-				if self.transfer_thread.isActive() and isinstance(fs_model, PVRFileSystemModel):
-					callback = self.on_no_file_ops_clicked
-				
 				handler_id = btn.connect('activate',
 				                         callback,
 				                         treeview,
@@ -784,6 +784,13 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 
 	def reallyQuit(self):
 		gtk.main_quit()
+
+	def showNoFileOperationDialog(self):
+		dialog = gtk.MessageDialog(message_format=_('It is not possible to delete, rename, or create folders on the PVR during a file transfer.'),
+		                           type=gtk.MESSAGE_ERROR,
+		                           buttons=gtk.BUTTONS_CLOSE)
+		dialog.run()
+		dialog.destroy()
 		
 	def show_transfer_frame(self):
 		# Set position of pane separator
@@ -1123,11 +1130,6 @@ class TransferThread(threading.Thread):
 		self.file_queue = self.guppy.transfer_queue
 		self.complete_queue = self.guppy.transfer_complete_queue
 		
-		self.active = False
-		
-	def isActive(self):
-		return self.active
-	
 	def run(self):
 		while True:
 				
@@ -1143,8 +1145,6 @@ class TransferThread(threading.Thread):
 			if not file_transfer.isAlive():
 				continue
 
-			self.active = True
-			
 			direction = file_transfer.direction
 			src_file = file_transfer.src
 			dst_file = file_transfer.dst
@@ -1274,8 +1274,6 @@ class TransferThread(threading.Thread):
 			
 			# Put on queue for completed transfers
 			self.complete_queue.put(file_transfer)
-			
-			self.active = False
 			
 			if file_transfer.getQuitAfterTransfer():
 				gtk.gdk.threads_enter()

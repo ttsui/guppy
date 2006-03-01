@@ -174,6 +174,19 @@ class Puppy:
 			status = self.popen_obj.poll()
 			
 		return status
+
+	def isActive(self):
+		lock_file = open(Puppy.LOCK_FILE, 'a')
+		
+		try:
+			fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+			result = False
+		except:
+			result = True
+			
+		lock_file.close()
+	
+		return result
 		
 	def listDir(self, path=None):
 		args = ['-c', 'dir']
@@ -295,26 +308,13 @@ class Puppy:
 		
 		return
 			
-	def _anotherPuppyActive(self):
-		lock_file = open(Puppy.LOCK_FILE, 'a')
-		
-		try:
-			fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
-			result = False
-		except:
-			result = True
-			
-		lock_file.close()
-	
-		return result
-		
 	def _execute(self, args_list):
 		cmd = [ self.cmd ] + args_list
 		
 		if DEBUG:
 			print 'cmd = ', cmd
 
-		if self._anotherPuppyActive():
+		if self.isActive():
 			raise PuppyBusyError('Can not get exclusive lock on ' + Puppy.LOCK_FILE)
 			
 		self.popen_obj = popen2.Popen4(cmd)
