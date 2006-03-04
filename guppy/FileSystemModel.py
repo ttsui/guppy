@@ -42,8 +42,10 @@ class FileSystemModel(gtk.ListStore):
 
 	img = gtk.Image()
 	file_icon = img.render_icon(gtk.STOCK_FILE, gtk.ICON_SIZE_LARGE_TOOLBAR)
-	video_icon = gtk.gdk.pixbuf_new_from_file('video.png')
+	video_icon = None
 
+	# FiXME: Shouldn't gtk.STOCK_DIRECTORY already use the directory icon from
+	#        the theme?
 	icon_theme = gtk.icon_theme_get_default()
 	try:
 		settings = gtk.settings_get_for_screen(img.get_screen())
@@ -60,7 +62,7 @@ class FileSystemModel(gtk.ListStore):
 	except gobject.GError, exc:
 		dir_icon = img.render_icon(gtk.STOCK_DIRECTORY, gtk.ICON_SIZE_LARGE_TOOLBAR)
 
-	def __init__(self, show_parent_dir=False):
+	def __init__(self, datadir, show_parent_dir=False):
 		self.current_dir = None
 		self.show_parent_dir = show_parent_dir
 		gtk.ListStore.__init__(self, FileSystemModel.LIST_TYPES[FileSystemModel.TYPE_COL],
@@ -68,6 +70,9 @@ class FileSystemModel(gtk.ListStore):
 		                       FileSystemModel.LIST_TYPES[FileSystemModel.NAME_COL],
 							   FileSystemModel.LIST_TYPES[FileSystemModel.DATE_COL],
 			                   FileSystemModel.LIST_TYPES[FileSystemModel.SIZE_COL])
+
+		if FileSystemModel.video_icon == None:
+			FileSystemModel.video_icon = gtk.gdk.pixbuf_new_from_file(datadir + '/' + 'video.png')
 
 	def abspath(self, file):
 		if self.current_dir[-1] != self.separator and file[0] != self.separator:
@@ -201,8 +206,8 @@ class FileSystemModel(gtk.ListStore):
 			return 1
 
 class PCFileSystemModel(FileSystemModel):
-	def __init__(self, show_parent_dir=False):
-		FileSystemModel.__init__(self, show_parent_dir)
+	def __init__(self, datadir, show_parent_dir=False):
+		FileSystemModel.__init__(self, datadir, show_parent_dir)
 		
 		# FIXME: Get dir from when Guppy last exited
 		self.current_dir = os.environ['HOME']
@@ -311,8 +316,8 @@ class PCFileSystemModel(FileSystemModel):
 		os.rename(self.abspath(old), self.abspath(new))
 
 class PVRFileSystemModel(FileSystemModel):
-	def __init__(self, show_parent_dir=False):
-		FileSystemModel.__init__(self, show_parent_dir)
+	def __init__(self, datadir, show_parent_dir=False):
+		FileSystemModel.__init__(self, datadir, show_parent_dir)
 
 		self.separator = '\\'
 		# FIXME: Get dir from when Guppy last exited
