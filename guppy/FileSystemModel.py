@@ -75,8 +75,8 @@ class FileSystemModel(gtk.ListStore):
 			FileSystemModel.video_icon = gtk.gdk.pixbuf_new_from_file(datadir + '/' + 'video.png')
 
 	def abspath(self, file):
-		if self.current_dir[-1] != self.separator and file[0] != self.separator:
-			return self.current_dir + self.separator + file
+		if self.current_dir[-1] != self.slash and file[0] != self.slash:
+			return self.current_dir + self.slash + file
 		else:
 			return self.current_dir + file
 		
@@ -212,12 +212,12 @@ class PCFileSystemModel(FileSystemModel):
 		# FIXME: Get dir from when Guppy last exited
 		self.current_dir = os.environ['HOME']
 		
-		self.separator = '/'
+		self.slash = '/'
 		
 	def changeDir(self, dir=None):
 		if dir:
 			# Append CWD if dir is not an absolute path
-			if dir[0] != self.separator:
+			if dir[0] != self.slash:
 				dir = self.abspath(dir)
 		else:
 			dir = self.current_dir
@@ -225,7 +225,7 @@ class PCFileSystemModel(FileSystemModel):
 		dir = os.path.normpath(dir)
 		# os.path.normpath() doesn't normalise '//' to '/'
 		if dir == '//':
-			dir = '/'
+			dir = self.slash
 		
 		if not os.access(dir, os.F_OK):
 			return False
@@ -319,10 +319,10 @@ class PVRFileSystemModel(FileSystemModel):
 	def __init__(self, datadir, show_parent_dir=False):
 		FileSystemModel.__init__(self, datadir, show_parent_dir)
 
-		self.separator = '\\'
+		self.slash = '\\'
 		# FIXME: Get dir from when Guppy last exited
 		# We need to use an empty string to list the PVR root directory.
-		self.current_dir = self.separator
+		self.current_dir = self.slash
 
 		self.freespace = 0
 				
@@ -338,19 +338,19 @@ class PVRFileSystemModel(FileSystemModel):
 		"""
 		if dir:
 			# Append CWD if dir is not an absolute path
-			if dir[0] != self.separator:
+			if dir[0] != self.slash:
 				dir = self.abspath(dir)
 		else:
 			dir = self.current_dir
 
-		norm_path = os.path.normpath(dir.replace(self.separator, '/'))
+		norm_path = os.path.normpath(dir.replace(self.slash, '/'))
 		# norm_path is '.' when _dir_ is an empty string. _dir_ is an empty
 		# string for the PVR root directory.
 		# Also don't change dir when changing to '..' directory.
 		if norm_path == '.' or norm_path == '..':
-			dir = self.separator
+			dir = self.slash
 		else:
-			dir = norm_path.replace('/', self.separator)
+			dir = norm_path.replace('/', self.slash)
 
 		dir_node = self.findDirectory(dir)
 		if dir_node == None:
@@ -386,7 +386,6 @@ class PVRFileSystemModel(FileSystemModel):
 			self.append([ 'd', gtk.STOCK_DIRECTORY, '..', '', ''])
 
 	def delete(self, file):
-		print 'file = ', file
 		self.puppy.delete(self.abspath(file))
 
 	def exists(self, file):
@@ -406,7 +405,10 @@ class PVRFileSystemModel(FileSystemModel):
 		self.dir_tree_lock.acquire()
 		cur_node = self.dir_tree
 		
-		for dir in path.split('\\'):
+		# Strip trailing slash
+		path = path.rstrip(self.slash)
+		
+		for dir in path.split(self.slash):
 			if len(dir) == 0:
 				continue
 			cur_node, node_info = cur_node.getDirectory(dir)
@@ -509,15 +511,22 @@ class PVRFileSystemModel(FileSystemModel):
 		if DEBUG:
 			print 'Start updateDirectory(%s)' % (dir)
 			
-		# Remove separator at end of path
-		if dir[-1] == self.separator:
-			dir = dir[:-1]
-			
+		# Strip trailing slash
+		dir = dir.rstrip(self.slash)
+
 		self.dir_tree_lock.acquire()
+
+		# Call scanDirectory() directly if dir is root dir, i.e. '\'
+		if len(dir) == 0:
+			self.dir_tree = self.scanDirectory('')
+			self.dir_tree_lock.release()
+			if DEBUG:
+				print 'End updateDirectory(\\)'
+			return
 
 		# Get components of directory path as a list
 		path = dir.split('\\')
-		
+
 		# Find parent node		
 		parent_node = self.dir_tree
 		for name in path[:-1]:

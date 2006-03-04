@@ -281,6 +281,10 @@ class GuppyWindow:
 			                 self.on_treeview_button_press,
 			                 fs_model)
 
+			treeview.connect('key-press-event',
+			                 self.on_treeview_key_press,
+			                 fs_model)
+
 			# Text cell for file name			
 			text_cell = gtk.CellRendererText()
 			text_cell.set_property('ellipsize', pango.ELLIPSIZE_END)
@@ -650,7 +654,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		self.show_hidden = not self.show_hidden
 		self.pc_liststore.get_model().refilter()
 		self.pvr_liststore.get_model().refilter()
-
+	
 	def on_treeview_button_press(self, treeview, event, fs_model):
 		if event.button == 3:
 			time = event.time
@@ -721,6 +725,15 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			actiongrp.set_sensitive(True)
 		else:
 			actiongrp.set_sensitive(False)
+
+	def on_treeview_key_press(self, treeview, event, fs_model):
+		
+		# <F2>: Rename selected file.
+		if event.keyval == 65471:
+			selection = treeview.get_selection()
+			model, files = selection.get_selected_rows()
+			if len(files) == 1:
+				self.on_rename_btn_clicked(None, treeview, fs_model)
 	
 	def on_treeview_row_activated(self, widget, path, col, fs_model):
 		model = widget.get_model()
