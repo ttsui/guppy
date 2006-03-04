@@ -98,8 +98,8 @@ class GuppyWindow:
 		else:
 			show_parent_dir = False
 
-		self.pvr_model = PVRFileSystemModel(show_parent_dir)
-		self.pc_model = PCFileSystemModel(show_parent_dir)
+		self.pvr_model = PVRFileSystemModel(self.datadir, show_parent_dir)
+		self.pc_model = PCFileSystemModel(self.datadir, show_parent_dir)
 		
 		self.pc_path_entry_box = self.glade_xml.get_widget('pc_path_entry_box')
 		self.pvr_path_entry_box = self.glade_xml.get_widget('pvr_path_entry_box')
