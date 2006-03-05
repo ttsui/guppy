@@ -42,27 +42,44 @@ class FileSystemModel(gtk.ListStore):
 
 	img = gtk.Image()
 	file_icon = img.render_icon(gtk.STOCK_FILE, gtk.ICON_SIZE_LARGE_TOOLBAR)
-	# Set in __init__()
-	video_icon = None
 
 	# FiXME: Shouldn't gtk.STOCK_DIRECTORY already use the directory icon from
 	#        the theme?
 	icon_theme = gtk.icon_theme_get_default()
-	try:
-		settings = gtk.settings_get_for_screen(img.get_screen())
-		icon_size = gtk.icon_size_lookup_for_settings(settings, gtk.ICON_SIZE_LARGE_TOOLBAR)
-		if icon_size:
-			icon_size = max(icon_size[0], icon_size[1])
-		else:
-			icon_size = 24
+	settings = gtk.settings_get_for_screen(img.get_screen())
+	icon_size = gtk.icon_size_lookup_for_settings(settings, gtk.ICON_SIZE_LARGE_TOOLBAR)
+	if icon_size:
+		icon_size = max(icon_size[0], icon_size[1])
+	else:
+		icon_size = 24
 
-		dir_icon = icon_theme.load_icon('folder', icon_size, gtk.ICON_LOOKUP_USE_BUILTIN)
-		if dir_icon == None:
-			dir_icon = img.render_icon(gtk.STOCK_DIRECTORY, gtk.ICON_SIZE_LARGE_TOOLBAR)
-			
-	except gobject.GError, exc:
-		dir_icon = img.render_icon(gtk.STOCK_DIRECTORY, gtk.ICON_SIZE_LARGE_TOOLBAR)
+	# List of icons and corresponding icon theme name
+	icons = { 'dir_icon' : ('folder', gtk.STOCK_DIRECTORY),
+	          'video_icon' : ('video-x-generic', None),
+	          'audio_icon' : ('audio-x-generic', None) }
 
+	# Try and load icon from icon theme	
+	for key, value in icons.iteritems():
+		try:
+			icon_name, icon_default = value
+			icons[key] = icon_theme.load_icon(icon_name, icon_size, gtk.ICON_LOOKUP_USE_BUILTIN)
+		except gobject.GError, exc:
+			icons[key] = None
+			pass
+		
+		if icons[key] == None:
+			if icon_default != None:
+				icons[key] = img.render_icon(icon_default, gtk.ICON_SIZE_LARGE_TOOLBAR)
+			else:
+				icons[key] = icon_default
+
+	dir_icon = icons['dir_icon']
+	
+	# These icons are set in __init__() if they can not be found in the icon
+	# theme.
+	video_icon = icons['video_icon']
+	audio_icon = icons['audio_icon']
+	
 	def __init__(self, datadir, show_parent_dir=False):
 		self.current_dir = None
 		self.show_parent_dir = show_parent_dir
@@ -74,6 +91,9 @@ class FileSystemModel(gtk.ListStore):
 
 		if FileSystemModel.video_icon == None:
 			FileSystemModel.video_icon = gtk.gdk.pixbuf_new_from_file(datadir + '/' + 'video.png')
+			
+		if FileSystemModel.audio_icon == None:
+			FileSystemModel.audio_icon = gtk.gdk.pixbuf_new_from_file(datadir + '/' + 'audio.png')
 
 	def abspath(self, file):
 		if self.current_dir[-1] != self.slash and file[0] != self.slash:
@@ -264,8 +284,10 @@ class PCFileSystemModel(FileSystemModel):
 				size = ''
 			else:
 				type = 'f'
-				if file[-4:] == '.rec':
+				if file[-4:].lower() == '.rec':
 					icon = FileSystemModel.video_icon
+				elif file[-4:].lower() == '.mp3':
+					icon = FileSystemModel.audio_icon
 				else:
 					icon = FileSystemModel.file_icon
 				size = humanReadableSize(mode[stat.ST_SIZE])
@@ -375,8 +397,10 @@ class PVRFileSystemModel(FileSystemModel):
 			self.clear()
 
 		for file_name, file_info in dir_node.getFiles():
-			if file_name[-4:] == '.rec':
+			if file_name[-4:].lower() == '.rec':
 				icon = FileSystemModel.video_icon		
+			elif file_name[-4:].lower() == '.mp3':
+				icon = FileSystemModel.audio_icon		
 			else:
 				icon = FileSystemModel.file_icon
 				
