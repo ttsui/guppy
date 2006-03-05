@@ -42,6 +42,7 @@ class FileSystemModel(gtk.ListStore):
 
 	img = gtk.Image()
 	file_icon = img.render_icon(gtk.STOCK_FILE, gtk.ICON_SIZE_LARGE_TOOLBAR)
+	# Set in __init__()
 	video_icon = None
 
 	# FiXME: Shouldn't gtk.STOCK_DIRECTORY already use the directory icon from
