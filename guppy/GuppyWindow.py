@@ -20,7 +20,7 @@ import os
 import stat
 import threading
 import Queue
-import datetime
+import time
 
 import gtk
 import gtk.glade
@@ -868,6 +868,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		for path in files:
 			iter = model.get_iter(path)
 			file = model.get_value(iter, FileSystemModel.NAME_COL)
+			date = model.get_value(iter, FileSystemModel.DATE_COL)
 
 			if direction == 'download':
 				src_dir = self.pvr_model.getCWD()
@@ -898,7 +899,8 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			from_label.set_text(src_dir)
 			to_label.set_text(dst_dir)
 	
-			file_transfer = FileTransfer(direction, src_file, dst_file, xml)
+			file_transfer = FileTransfer(direction, src_file, dst_file,
+			                             date, xml)
 
 			# Connect transfer instance remove button signal handler
 			remove_btn = xml.get_widget('transfer_remove_button')
@@ -1075,7 +1077,7 @@ class PVRErrorWindow:
 		self.pvr_error_treeview.append_column(col)
 		
 	def addError(self, msg, error_output):
-		error_msg = _('ERROR') + ': ' + datetime.datetime.now().strftime('%a %b %d, %I:%M %p') +'\n'
+		error_msg = _('ERROR') + ': ' + time.strftime('%a %b %d, %I:%M %p', time.localtime()) +'\n'
 		error_msg += '<b>' + msg + '</b>'
 		
 		self.liststore.append([gtk.STOCK_DIALOG_ERROR, gtk.ICON_SIZE_DIALOG, error_msg, error_output])
@@ -1112,11 +1114,12 @@ class PVRErrorWindow:
 		self.error_window.show()
 
 class FileTransfer:
-	def __init__(self, direction, src, dst, xml):
+	def __init__(self, direction, src, dst, file_date, xml):
 		self.direction = direction
 		self.src = src
 		self.dst = dst
 		self.xml = xml
+		self.file_date = file_date
 		
 		self.alive = True
 		self.quit_after_transfer = False
@@ -1208,7 +1211,7 @@ class TransferThread(threading.Thread):
 			percent = True			
 			while percent != None:
 				try:
-					percent, speed, time = self.guppy.puppy.getProgress()
+					percent, speed, transfer_time = self.guppy.puppy.getProgress()
 				except PuppyError, error:
 					# Quit trying to transfer file after a certain number of attempts
 					if transfer_attempt > TransferThread.NUM_OF_TRANSFER_ATTEMPTS:
@@ -1241,7 +1244,7 @@ class TransferThread(threading.Thread):
 					
 				gtk.gdk.threads_enter()
 				progress_bar.set_fraction(float(percent)/100)
-				progress_bar.set_text('(' + time['remaining'] + ' ' + _('Remaining') + ')')
+				progress_bar.set_text('(' + transfer_time['remaining'] + ' ' + _('Remaining') + ')')
 
 				while gtk.events_pending():
 					gtk.main_iteration()
@@ -1251,6 +1254,18 @@ class TransferThread(threading.Thread):
 			# turbo mode is left on.
 			if self.guppy.turbo == True:
 				self.guppy.puppy.setTurbo(False)
+
+			# Set modification time of downloaded file to the same time as the
+			# as on the PVR.
+			if direction == 'download':
+				# Parse date string
+				time_struct = time.strptime(file_transfer.file_date, '%a %b %d %Y')
+				
+				# Convert to seconds since the epoch
+				time_secs = time.mktime(time_struct)
+				
+				# Set modification time
+				os.utime(dst_file, (int(time.time()), time_secs))
 			
 			gtk.gdk.threads_enter()
 			if transfer_successful:
@@ -1275,9 +1290,6 @@ class TransferThread(threading.Thread):
 			# Swap Stop button for Remove button
 			gtk.gdk.threads_enter()
 			stop_btn.hide()
-			gtk.gdk.threads_leave()
-			
-			gtk.gdk.threads_enter()
 			remove_btn.show()
 			gtk.gdk.threads_leave()
 
