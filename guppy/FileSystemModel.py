@@ -145,11 +145,11 @@ class FileSystemModel(gtk.ListStore):
 	def date_sort_func(self, model, iter1, iter2, col=None):
 		# Date column is empty for '..' directory
 		date1_str = model.get_value(iter1, col)
-		if len(date1_str) == 0:
+		if date1_str == None or len(date1_str) == 0:
 			return -1
 		
 		date2_str = model.get_value(iter2, col)
-		if len(date2_str) == 0:
+		if date2_str == None or len(date2_str) == 0:
 			return 1
 
 		format = '%a %b %d %Y'
@@ -164,29 +164,40 @@ class FileSystemModel(gtk.ListStore):
 			return 1
 
 	def size_sort_func(self, model, iter1, iter2, col=None):
-		size1 = model.get_value(iter1, col).split()
-		size2 = model.get_value(iter2, col).split()
+		size1 = model.get_value(iter1, col)
+		size2 = model.get_value(iter2, col)
 
+		# We can get None on PVR FS.
+		if size1 == None and size2 != None:
+			return -1
+		elif size1 != None and size2 == None:
+			return 1
+		elif size1 == None and size2 == None:
+			return self.string_sort_func(model, iter1, iter2, FileSystemModel.NAME_COL);
+
+		# Handle when size is empty string. Typical for directories on PC.			
 		size1_len = len(size1)
 		size2_len = len(size2)
-		
-		if size1_len < size2_len:
+
+		if size1_len == 0 and size2_len > 0:
 			return -1
-		elif size1_len > size2_len:
+		elif size1_len > 0 and size2_len == 0:
 			return 1
-		else:
-			return 0
+		elif size1_len == 0 and size2_len == 0:
+			return self.string_sort_func(model, iter1, iter2, FileSystemModel.NAME_COL);
+		
+		size1 = size1.split()
+		size2 = size2.split()
 
 		unit_weight = { 'B' : 1, 'KB' : 2, 'MB' : 3, 'GB' : 4 }
 
-		# Sizes in bytes may not have 'B' unit postfix
+		# Sizes in bytes may not have 'B' unit
 		if len(size1) < 2:
 			size1[1] = unit_weight['B']
 		else:
 			size1[1] = unit_weight[size1[1]]
 
-		return 1
-		# Sizes in bytes may not have 'B' unit appended
+		# Sizes in bytes may not have 'B' unit
 		if len(size2) < 2:
 			size2[1] = unit_weight['B']
 		else:
