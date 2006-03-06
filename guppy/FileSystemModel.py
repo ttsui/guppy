@@ -40,45 +40,69 @@ class FileSystemModel(gtk.ListStore):
 	LIST_TYPES.insert(DATE_COL, gobject.TYPE_STRING)
 	LIST_TYPES.insert(SIZE_COL, gobject.TYPE_STRING)
 
-	img = gtk.Image()
-	file_icon = img.render_icon(gtk.STOCK_FILE, gtk.ICON_SIZE_LARGE_TOOLBAR)
+#	icons_loaded = False
 
-	# FiXME: Shouldn't gtk.STOCK_DIRECTORY already use the directory icon from
-	#        the theme?
-	icon_theme = gtk.icon_theme_get_default()
-	settings = gtk.settings_get_for_screen(img.get_screen())
-	icon_size = gtk.icon_size_lookup_for_settings(settings, gtk.ICON_SIZE_LARGE_TOOLBAR)
-	if icon_size:
-		icon_size = max(icon_size[0], icon_size[1])
-	else:
-		icon_size = 24
-
-	# List of icons and corresponding icon theme name
-	icons = { 'dir_icon' : ('folder', gtk.STOCK_DIRECTORY),
-	          'video_icon' : ('video-x-generic', None),
-	          'audio_icon' : ('audio-x-generic', None) }
-
-	# Try and load icon from icon theme	
-	for key, value in icons.iteritems():
-		try:
-			icon_name, icon_default = value
-			icons[key] = icon_theme.load_icon(icon_name, icon_size, gtk.ICON_LOOKUP_USE_BUILTIN)
-		except gobject.GError, exc:
-			icons[key] = None
-			pass
-		
-		if icons[key] == None:
-			if icon_default != None:
-				icons[key] = img.render_icon(icon_default, gtk.ICON_SIZE_LARGE_TOOLBAR)
-			else:
-				icons[key] = icon_default
-
-	dir_icon = icons['dir_icon']
+	# Set in FileSystemModel::load_icons()
+	file_icon = None
+	dir_icon = None
+	# Also set in FileSystemModel::__init__() if not in theme
+	video_icon = None
+	audio_icon = None
 	
-	# These icons are set in __init__() if they can not be found in the icon
-	# theme.
-	video_icon = icons['video_icon']
-	audio_icon = icons['audio_icon']
+#	icon_theme = gtk.icon_theme_get_default()
+			
+	def _load_icons(self, icon_theme, datadir):
+		print 'load_icons()'
+		
+		if not self.icons_loaded:
+			print 'connect icon theme change'
+			icon_theme.connect('changed', self._load_icons, datadir)
+		
+		img = gtk.Image()
+		self.file_icon = img.render_icon(gtk.STOCK_FILE,
+		                                            gtk.ICON_SIZE_LARGE_TOOLBAR)
+	
+		settings = gtk.settings_get_for_screen(img.get_screen())
+		icon_size = gtk.icon_size_lookup_for_settings(settings,
+		                                            gtk.ICON_SIZE_LARGE_TOOLBAR)
+		if icon_size:
+			icon_size = max(icon_size[0], icon_size[1])
+		else:
+			icon_size = 24
+
+		# List of icons and corresponding icon theme name
+		icons = { 'dir_icon' : 'folder',
+		          'video_icon' : 'video-x-generic',
+		          'audio_icon' : 'audio-x-generic'}
+	
+		# Try and load icon from icon theme	
+		for key, icon_name in icons.iteritems():
+			try:
+				icons[key] = icon_theme.load_icon(icon_name, icon_size,
+				                                  gtk.ICON_LOOKUP_USE_BUILTIN)
+			except gobject.GError, exc:
+				icons[key] = None
+				pass
+
+		self.dir_icon = icons['dir_icon']
+		self.video_icon = icons['video_icon']
+		self.audio_icon = icons['audio_icon']
+
+		if self.dir_icon == None:
+			self.dir_icon = img.render_icon(gtk.STOCK_DIRECTORY,
+		                                               gtk.ICON_SIZE_LARGE_TOOLBAR)
+		
+		if self.video_icon == None:	
+			self.video_icon = gtk.gdk.pixbuf_new_from_file(datadir +
+			                                                  '/' + 'video.png')
+
+		if self.audio_icon == None:	
+			self.audio_icon = gtk.gdk.pixbuf_new_from_file(datadir +
+			                                                  '/' + 'audio.png')
+		
+#		print id(self.video_icon)
+		if self.icons_loaded:
+			self.changeDir()
 	
 	def __init__(self, datadir, show_parent_dir=False):
 		self.current_dir = None
@@ -89,11 +113,10 @@ class FileSystemModel(gtk.ListStore):
 							   FileSystemModel.LIST_TYPES[FileSystemModel.DATE_COL],
 			                   FileSystemModel.LIST_TYPES[FileSystemModel.SIZE_COL])
 
-		if FileSystemModel.video_icon == None:
-			FileSystemModel.video_icon = gtk.gdk.pixbuf_new_from_file(datadir + '/' + 'video.png')
-			
-		if FileSystemModel.audio_icon == None:
-			FileSystemModel.audio_icon = gtk.gdk.pixbuf_new_from_file(datadir + '/' + 'audio.png')
+		self.icon_theme = gtk.icon_theme_get_default()
+		self.icons_loaded = False
+		self._load_icons(self.icon_theme, datadir)
+		self.icons_loaded = True
 
 	def abspath(self, file):
 		if self.current_dir[-1] != self.slash and file[0] != self.slash:
@@ -285,11 +308,11 @@ class PCFileSystemModel(FileSystemModel):
 			else:
 				type = 'f'
 				if file[-4:].lower() == '.rec':
-					icon = FileSystemModel.video_icon
+					icon = self.video_icon
 				elif file[-4:].lower() == '.mp3':
-					icon = FileSystemModel.audio_icon
+					icon = self.audio_icon
 				else:
-					icon = FileSystemModel.file_icon
+					icon = self.file_icon
 				size = humanReadableSize(mode[stat.ST_SIZE])
 			
 			mtime = time.strftime('%a %b %d %Y', time.localtime(mode[stat.ST_MTIME]))
@@ -398,11 +421,11 @@ class PVRFileSystemModel(FileSystemModel):
 
 		for file_name, file_info in dir_node.getFiles():
 			if file_name[-4:].lower() == '.rec':
-				icon = FileSystemModel.video_icon		
+				icon = self.video_icon		
 			elif file_name[-4:].lower() == '.mp3':
-				icon = FileSystemModel.audio_icon		
+				icon = self.audio_icon		
 			else:
-				icon = FileSystemModel.file_icon
+				icon = self.file_icon
 				
 			file_info.insert(FileSystemModel.ICON_COL, icon)
 		
