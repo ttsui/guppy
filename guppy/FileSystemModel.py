@@ -40,12 +40,12 @@ class FileSystemModel(gtk.ListStore):
 	LIST_TYPES.insert(DATE_COL, gobject.TYPE_STRING)
 	LIST_TYPES.insert(SIZE_COL, gobject.TYPE_STRING)
 
+	# Flag to indicate icons have already been loaded
 	icons_loaded = False
 
-	# Set in FileSystemModel::load_icons()
+	# Set in FileSystemModel::__load_icons()
 	file_icon = None
 	dir_icon = None
-	# Also set in FileSystemModel::__init__() if not in theme
 	video_icon = None
 	audio_icon = None
 	
@@ -54,15 +54,22 @@ class FileSystemModel(gtk.ListStore):
 	
 	@staticmethod
 	def __connect_theme_change_callback(callback):
-		print '__connect_theme_change_callback()'
+		""" Register theme change callback functions from each FileSystemModel
+		    instance.
+		    
+		    Typically the callback functions will refresh the user interface
+		    with the new icons.
+		"""
 		FileSystemModel.theme_change_callback.append(callback)
 		
 	@staticmethod
 	def __load_icons(icon_theme, datadir):
-		print 'load_icons()'
+		""" Load icons for files, directories, video and audio files.
 		
+		    This function should be called once on class initialisation and
+		    whenever a theme change occurs.
+		"""
 		if not FileSystemModel.icons_loaded:
-			print 'connect icon theme change'
 			icon_theme.connect('changed', FileSystemModel.__load_icons, datadir)
 		
 		img = gtk.Image()
@@ -77,7 +84,7 @@ class FileSystemModel(gtk.ListStore):
 		else:
 			icon_size = 24
 
-		# List of icons and corresponding icon theme name
+		# List of icons and their icon theme name
 		icons = { 'dir_icon' : 'folder',
 		          'video_icon' : 'video-x-generic',
 		          'audio_icon' : 'audio-x-generic'}
@@ -95,6 +102,7 @@ class FileSystemModel(gtk.ListStore):
 		FileSystemModel.video_icon = icons['video_icon']
 		FileSystemModel.audio_icon = icons['audio_icon']
 
+		# Load default icons if icon not found in theme
 		if FileSystemModel.dir_icon == None:
 			FileSystemModel.dir_icon = img.render_icon(gtk.STOCK_DIRECTORY,
 		                                               gtk.ICON_SIZE_LARGE_TOOLBAR)
@@ -107,9 +115,9 @@ class FileSystemModel(gtk.ListStore):
 			FileSystemModel.audio_icon = gtk.gdk.pixbuf_new_from_file(datadir +
 			                                                  '/' + 'audio.png')
 		
+		# Call registered theme change callback functions
 		if FileSystemModel.icons_loaded:
 			for callback in FileSystemModel.theme_change_callback:
-				print 'callback = ', callback
 				callback()
 		
 		FileSystemModel.icons_loaded = True
@@ -123,8 +131,11 @@ class FileSystemModel(gtk.ListStore):
 							   FileSystemModel.LIST_TYPES[FileSystemModel.DATE_COL],
 			                   FileSystemModel.LIST_TYPES[FileSystemModel.SIZE_COL])
 
+		# Load icons once
 		if not FileSystemModel.icons_loaded:
 			FileSystemModel.__load_icons(FileSystemModel.icon_theme, datadir)
+			
+		# Connect callback function for theme change
 		FileSystemModel.__connect_theme_change_callback(self.changeDir)
 
 	def abspath(self, file):
