@@ -40,7 +40,7 @@ class FileSystemModel(gtk.ListStore):
 	LIST_TYPES.insert(DATE_COL, gobject.TYPE_STRING)
 	LIST_TYPES.insert(SIZE_COL, gobject.TYPE_STRING)
 
-#	icons_loaded = False
+	icons_loaded = False
 
 	# Set in FileSystemModel::load_icons()
 	file_icon = None
@@ -49,17 +49,24 @@ class FileSystemModel(gtk.ListStore):
 	video_icon = None
 	audio_icon = None
 	
-#	icon_theme = gtk.icon_theme_get_default()
-			
-	def _load_icons(self, icon_theme, datadir):
+	icon_theme = gtk.icon_theme_get_default()
+	theme_change_callback = []
+	
+	@staticmethod
+	def __connect_theme_change_callback(callback):
+		print '__connect_theme_change_callback()'
+		FileSystemModel.theme_change_callback.append(callback)
+		
+	@staticmethod
+	def __load_icons(icon_theme, datadir):
 		print 'load_icons()'
 		
-		if not self.icons_loaded:
+		if not FileSystemModel.icons_loaded:
 			print 'connect icon theme change'
-			icon_theme.connect('changed', self._load_icons, datadir)
+			icon_theme.connect('changed', FileSystemModel.__load_icons, datadir)
 		
 		img = gtk.Image()
-		self.file_icon = img.render_icon(gtk.STOCK_FILE,
+		FileSystemModel.file_icon = img.render_icon(gtk.STOCK_FILE,
 		                                            gtk.ICON_SIZE_LARGE_TOOLBAR)
 	
 		settings = gtk.settings_get_for_screen(img.get_screen())
@@ -84,25 +91,28 @@ class FileSystemModel(gtk.ListStore):
 				icons[key] = None
 				pass
 
-		self.dir_icon = icons['dir_icon']
-		self.video_icon = icons['video_icon']
-		self.audio_icon = icons['audio_icon']
+		FileSystemModel.dir_icon = icons['dir_icon']
+		FileSystemModel.video_icon = icons['video_icon']
+		FileSystemModel.audio_icon = icons['audio_icon']
 
-		if self.dir_icon == None:
-			self.dir_icon = img.render_icon(gtk.STOCK_DIRECTORY,
+		if FileSystemModel.dir_icon == None:
+			FileSystemModel.dir_icon = img.render_icon(gtk.STOCK_DIRECTORY,
 		                                               gtk.ICON_SIZE_LARGE_TOOLBAR)
 		
-		if self.video_icon == None:	
-			self.video_icon = gtk.gdk.pixbuf_new_from_file(datadir +
+		if FileSystemModel.video_icon == None:	
+			FileSystemModel.video_icon = gtk.gdk.pixbuf_new_from_file(datadir +
 			                                                  '/' + 'video.png')
 
-		if self.audio_icon == None:	
-			self.audio_icon = gtk.gdk.pixbuf_new_from_file(datadir +
+		if FileSystemModel.audio_icon == None:	
+			FileSystemModel.audio_icon = gtk.gdk.pixbuf_new_from_file(datadir +
 			                                                  '/' + 'audio.png')
 		
-#		print id(self.video_icon)
-		if self.icons_loaded:
-			self.changeDir()
+		if FileSystemModel.icons_loaded:
+			for callback in FileSystemModel.theme_change_callback:
+				print 'callback = ', callback
+				callback()
+		
+		FileSystemModel.icons_loaded = True
 	
 	def __init__(self, datadir, show_parent_dir=False):
 		self.current_dir = None
@@ -113,10 +123,9 @@ class FileSystemModel(gtk.ListStore):
 							   FileSystemModel.LIST_TYPES[FileSystemModel.DATE_COL],
 			                   FileSystemModel.LIST_TYPES[FileSystemModel.SIZE_COL])
 
-		self.icon_theme = gtk.icon_theme_get_default()
-		self.icons_loaded = False
-		self._load_icons(self.icon_theme, datadir)
-		self.icons_loaded = True
+		if not FileSystemModel.icons_loaded:
+			FileSystemModel.__load_icons(FileSystemModel.icon_theme, datadir)
+		FileSystemModel.__connect_theme_change_callback(self.changeDir)
 
 	def abspath(self, file):
 		if self.current_dir[-1] != self.slash and file[0] != self.slash:
@@ -308,11 +317,11 @@ class PCFileSystemModel(FileSystemModel):
 			else:
 				type = 'f'
 				if file[-4:].lower() == '.rec':
-					icon = self.video_icon
+					icon = FileSystemModel.video_icon
 				elif file[-4:].lower() == '.mp3':
-					icon = self.audio_icon
+					icon = FileSystemModel.audio_icon
 				else:
-					icon = self.file_icon
+					icon = FileSystemModel.file_icon
 				size = humanReadableSize(mode[stat.ST_SIZE])
 			
 			mtime = time.strftime('%a %b %d %Y', time.localtime(mode[stat.ST_MTIME]))
@@ -421,11 +430,11 @@ class PVRFileSystemModel(FileSystemModel):
 
 		for file_name, file_info in dir_node.getFiles():
 			if file_name[-4:].lower() == '.rec':
-				icon = self.video_icon		
+				icon = FileSystemModel.video_icon		
 			elif file_name[-4:].lower() == '.mp3':
-				icon = self.audio_icon		
+				icon = FileSystemModel.audio_icon		
 			else:
-				icon = self.file_icon
+				icon = FileSystemModel.file_icon
 				
 			file_info.insert(FileSystemModel.ICON_COL, icon)
 		
