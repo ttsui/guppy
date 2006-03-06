@@ -46,8 +46,12 @@ class FileSystemModel(gtk.ListStore):
 	# Set in FileSystemModel::__load_icons()
 	file_icon = None
 	dir_icon = None
-	video_icon = None
-	audio_icon = None
+	video, audio, tap, tap_ini = ('.rec', '.mp3', '.tap', '.ini')
+	icon_dict = { video : None,
+	              audio : None,
+	              tap : None,
+	              tap_ini : None,
+	            }
 	
 	icon_theme = gtk.icon_theme_get_default()
 	theme_change_callback = []
@@ -87,7 +91,9 @@ class FileSystemModel(gtk.ListStore):
 		# List of icons and their icon theme name
 		icons = { 'dir_icon' : 'folder',
 		          'video_icon' : 'video-x-generic',
-		          'audio_icon' : 'audio-x-generic'}
+		          'audio_icon' : 'audio-x-generic',
+		          'tap_icon' : 'application-x-executable',
+		        }
 	
 		# Try and load icon from icon theme	
 		for key, icon_name in icons.iteritems():
@@ -99,21 +105,25 @@ class FileSystemModel(gtk.ListStore):
 				pass
 
 		FileSystemModel.dir_icon = icons['dir_icon']
-		FileSystemModel.video_icon = icons['video_icon']
-		FileSystemModel.audio_icon = icons['audio_icon']
+		FileSystemModel.icon_dict[FileSystemModel.video] = icons['video_icon']
+		FileSystemModel.icon_dict[FileSystemModel.audio] = icons['audio_icon']
+		FileSystemModel.icon_dict[FileSystemModel.tap] = icons['tap_icon']
+		FileSystemModel.icon_dict[FileSystemModel.tap_ini] = icons['tap_icon']
 
 		# Load default icons if icon not found in theme
 		if FileSystemModel.dir_icon == None:
 			FileSystemModel.dir_icon = img.render_icon(gtk.STOCK_DIRECTORY,
 		                                               gtk.ICON_SIZE_LARGE_TOOLBAR)
 		
-		if FileSystemModel.video_icon == None:	
-			FileSystemModel.video_icon = gtk.gdk.pixbuf_new_from_file(datadir +
-			                                                  '/' + 'video.png')
+		if FileSystemModel.icon_dict[FileSystemModel.video] == None:	
+			FileSystemModel.icon_dict[FileSystemModel.video] = gtk.gdk.pixbuf_new_from_file(datadir + '/' + 'video.png')
 
-		if FileSystemModel.audio_icon == None:	
-			FileSystemModel.audio_icon = gtk.gdk.pixbuf_new_from_file(datadir +
-			                                                  '/' + 'audio.png')
+		if FileSystemModel.icon_dict[FileSystemModel.audio] == None:	
+			FileSystemModel.icon_dict[FileSystemModel.audio] = gtk.gdk.pixbuf_new_from_file(datadir + '/' + 'audio.png')
+
+		if FileSystemModel.icon_dict[FileSystemModel.tap] == None:	
+			FileSystemModel.icon_dict[FileSystemModel.tap] = gtk.gdk.pixbuf_new_from_file(datadir + '/' + 'tap.png')
+			FileSystemModel.icon_dict[FileSystemModel.tap_ini] = FileSystemModel.icon_dict[FileSystemModel.tap]
 		
 		# Call registered theme change callback functions
 		if FileSystemModel.icons_loaded:
@@ -121,6 +131,14 @@ class FileSystemModel(gtk.ListStore):
 				callback()
 		
 		FileSystemModel.icons_loaded = True
+	
+	@staticmethod
+	def getIconForFile(file):
+		extension = file[-4:].lower()
+		if FileSystemModel.icon_dict.has_key(extension):
+			return FileSystemModel.icon_dict[extension]
+		else:
+			return FileSystemModel.file_icon
 	
 	def __init__(self, datadir, show_parent_dir=False):
 		self.current_dir = None
@@ -318,21 +336,15 @@ class PCFileSystemModel(FileSystemModel):
 			try:
 				mode = os.stat(self.abspath(file))
 			except OSError, (errno, strerror):
-				print 'PCFileSystemModel::changeDir(%s): OSError(%s): %s\n' % (self.abspath(file), errno, strerror)
 				continue
 
 			if stat.S_ISDIR(mode[stat.ST_MODE]):
 				type = 'd'
-				icon = self.dir_icon
+				icon = FileSystemModel.dir_icon
 				size = ''
 			else:
 				type = 'f'
-				if file[-4:].lower() == '.rec':
-					icon = FileSystemModel.video_icon
-				elif file[-4:].lower() == '.mp3':
-					icon = FileSystemModel.audio_icon
-				else:
-					icon = FileSystemModel.file_icon
+				icon = FileSystemModel.getIconForFile(file)
 				size = humanReadableSize(mode[stat.ST_SIZE])
 			
 			mtime = time.strftime('%a %b %d %Y', time.localtime(mode[stat.ST_MTIME]))
@@ -440,13 +452,8 @@ class PVRFileSystemModel(FileSystemModel):
 			self.clear()
 
 		for file_name, file_info in dir_node.getFiles():
-			if file_name[-4:].lower() == '.rec':
-				icon = FileSystemModel.video_icon		
-			elif file_name[-4:].lower() == '.mp3':
-				icon = FileSystemModel.audio_icon		
-			else:
-				icon = FileSystemModel.file_icon
-				
+			icon = FileSystemModel.getIconForFile(file_name)
+								
 			file_info.insert(FileSystemModel.ICON_COL, icon)
 		
 			file_info[FileSystemModel.SIZE_COL] = humanReadableSize(int(file_info[FileSystemModel.SIZE_COL]))
