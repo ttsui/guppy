@@ -1257,7 +1257,7 @@ class TransferThread(threading.Thread):
 
 			# Set modification time of downloaded file to the same time as the
 			# as on the PVR.
-			if direction == 'download':
+			if transfer_successful and direction == 'download':
 				# Parse date string
 				time_struct = time.strptime(file_transfer.file_date, '%a %b %d %Y')
 				
