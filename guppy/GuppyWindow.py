@@ -1275,7 +1275,13 @@ class TransferThread(threading.Thread):
 			else:
 				progress_bar.set_text(_('Transfer Failed'))
 				self.guppy.pvr_error_btn.show()
-				self.guppy.pvr_error_window.addError(_('Transfer Failed'), transfer_error)
+
+				if direction == 'download':
+					msg = _('Failed to download:') + '\n' + src_file
+				else:
+					msg = _('Failed to upload: ') + '\n' + src_file
+
+				self.guppy.pvr_error_window.addError(msg, transfer_error)
 
 			gtk.gdk.threads_leave()
 				
