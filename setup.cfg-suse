@@ -1,4 +1,4 @@
 [bdist_rpm]
 group=Application/Multimedia
-release=1
+release=1.SUSE
 requires= puppy >= 1.11 python-gtk >= 2.6
