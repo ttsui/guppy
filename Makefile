@@ -1,7 +1,7 @@
-PREFIX=/usr
+DESTDIR=/usr
 
 install:
-	python setup.py install --prefix=$(PREFIX)
+	python setup.py install --prefix=$(DESTDIR)
 
 clean:
 	python setup.py clean
