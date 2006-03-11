@@ -1,4 +1,4 @@
-DESTDIR=/usr
+DESTDIR=/usr/local
 
 install:
 	python setup.py install --prefix=$(DESTDIR)
