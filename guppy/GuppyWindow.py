@@ -628,8 +628,8 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		self.updateTreeViews()
 		
 	def on_rename_btn_clicked(self, widget, treeview, fs_model):
-		# Fail rename if a transfer is in progress
-		if self.puppy.isActive():
+		# Fail rename on PVR if a transfer is in progress
+		if isinstance(fs_model, PVRFileSystemModel) and self.puppy.isActive():
 			self.showNoFileOperationDialog()
 			return
 		
