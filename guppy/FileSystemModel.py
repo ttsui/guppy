@@ -1,5 +1,5 @@
 ## FileSystemModel.py - FileSystemModel class
-## Copyright (C) 2005 Tony Tsui <tsui.tony@gmail.com>
+## Copyright (C) 2005-2006 Tony Tsui <tsui.tony@gmail.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -30,6 +30,18 @@ from util import *
 
 # Set to True for debug output
 DEBUG = False
+
+def debugLocking(action):
+	if DEBUG is False:
+		return
+	
+	caller = sys._getframe(1)
+	try:
+		func_name = inspect.getframeinfo(caller)[2]
+	finally:
+		del caller
+
+	print func_name + '(): ' + action
 
 class FileSystemModel(gtk.ListStore):
 	TYPE_COL, ICON_COL, NAME_COL, DATE_COL, SIZE_COL = range(5)
@@ -299,13 +311,15 @@ class FileSystemModel(gtk.ListStore):
 			return 1
 
 class PCFileSystemModel(FileSystemModel):
-	def __init__(self, datadir, show_parent_dir=False):
+	def __init__(self, datadir, cwd=None, show_parent_dir=False):
 		FileSystemModel.__init__(self, datadir, show_parent_dir)
-		
-		# FIXME: Get dir from when Guppy last exited
-		self.current_dir = os.environ['HOME']
-		
+
 		self.slash = '/'
+		
+		if cwd and self.exists(cwd):
+			self.current_dir = cwd
+		else:
+			self.current_dir = os.environ['HOME']		
 		
 	def changeDir(self, dir=None):
 		if dir:
@@ -364,7 +378,10 @@ class PCFileSystemModel(FileSystemModel):
 			os.remove(path)
 		
 	def exists(self, file):
-		return os.access(self.abspath(file), os.F_OK)
+		if file[0] != self.slash:
+			file = self.abspath(file)
+		
+		return os.access(file, os.F_OK)
 		
 	def freeSpace(self):
 		cmd = 'df -P ' + '"' + self.current_dir + '"'
@@ -405,17 +422,19 @@ class PCFileSystemModel(FileSystemModel):
 		os.rename(self.abspath(old), self.abspath(new))
 
 class PVRFileSystemModel(FileSystemModel):
-	def __init__(self, datadir, show_parent_dir=False):
+	def __init__(self, datadir, cwd=None, show_parent_dir=False):
 		FileSystemModel.__init__(self, datadir, show_parent_dir)
 
 		self.slash = '\\'
-		# FIXME: Get dir from when Guppy last exited
-		# We need to use an empty string to list the PVR root directory.
-		self.current_dir = self.slash
 
-		self.freespace = 0
-				
 		self.puppy = Puppy()
+		
+		if cwd and self.exists(cwd):
+			self.current_dir = cwd
+		else:		
+			self.current_dir = self.slash
+
+		self.freespace = 0				
 
 		self.dir_tree_lock = threading.Lock()
 
@@ -446,7 +465,7 @@ class PVRFileSystemModel(FileSystemModel):
 			return
 		
 		self.current_dir = dir
-
+		
 		# Clear model
 		if len(self) > 0:
 			self.clear()
@@ -475,11 +494,17 @@ class PVRFileSystemModel(FileSystemModel):
 		self.puppy.delete(self.abspath(file))
 
 	def exists(self, file):
-		pvr_files = self.puppy.listDir(self.current_dir)
+		if file[0] != self.slash:
+			file = self.abspath(file)
+			
+		print 'FIXME!\nFIXME!\nFIXME!: PVRFileSystemModel::exists()'
+		pvr_files = self.puppy.listDir(file)
+		return True
+#		pvr_files = self.puppy.listDir(self.current_dir)
 		
-		for p_file in pvr_files:
-			if p_file[1] == file:
-				return True
+#		for p_file in pvr_files:
+#			if p_file[1] == file:
+#				return True
 			
 		return False
 	
@@ -488,6 +513,7 @@ class PVRFileSystemModel(FileSystemModel):
 		
 		Returns: DirectoryNode object
 		"""
+		debugLocking('locking')
 		self.dir_tree_lock.acquire()
 		cur_node = self.dir_tree
 		
@@ -500,6 +526,7 @@ class PVRFileSystemModel(FileSystemModel):
 			cur_node, node_info = cur_node.getDirectory(dir)
 			if cur_node == None:
 				break
+		debugLocking('unlocking')
 		self.dir_tree_lock.release()
 
 		return cur_node
@@ -562,6 +589,7 @@ class PVRFileSystemModel(FileSystemModel):
 		if DEBUG:
 			print 'Start updateCache()'
 			
+		debugLocking('locking')
 		self.dir_tree_lock.acquire()
 
 		new_dir_tree = None
@@ -575,6 +603,7 @@ class PVRFileSystemModel(FileSystemModel):
 				time.sleep(1)
 				continue
 			except PuppyError:
+				debugLocking('unlocking')
 				self.dir_tree_lock.release()
 				raise
 			break
@@ -585,6 +614,7 @@ class PVRFileSystemModel(FileSystemModel):
 			
 		self.dir_tree = new_dir_tree
 
+		debugLocking('unlocking')
 		self.dir_tree_lock.release()
 		
 		if DEBUG:
@@ -600,11 +630,13 @@ class PVRFileSystemModel(FileSystemModel):
 		# Strip trailing slash
 		dir = dir.rstrip(self.slash)
 
+		debugLocking('locking')
 		self.dir_tree_lock.acquire()
 
 		# Call scanDirectory() directly if dir is root dir, i.e. '\'
 		if len(dir) == 0:
 			self.dir_tree = self.scanDirectory('')
+			debugLocking('unlocking')
 			self.dir_tree_lock.release()
 			if DEBUG:
 				print 'End updateDirectory(\\)'
@@ -634,6 +666,7 @@ class PVRFileSystemModel(FileSystemModel):
 				time.sleep(1)
 				continue
 			except PuppyError:
+				debugLocking('unlocking')
 				self.dir_tree_lock.release()
 				raise
 			break
@@ -645,6 +678,7 @@ class PVRFileSystemModel(FileSystemModel):
 		# Replace wit new node
 		parent_node.addDirectory(new_node, node_info)
 		
+		debugLocking('unlocking')
 		self.dir_tree_lock.release()
 		
 		if DEBUG:

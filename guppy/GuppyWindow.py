@@ -72,8 +72,8 @@ class GuppyWindow:
 		
 		# Connect buttons in toolbar to their respective action
 		for action, widget in [ (actions['turbo'], 'turbo_btn'),
-		                (actions['upload'], 'upload_btn'),
-						(actions['download'], 'download_btn') ]:
+		                        (actions['upload'], 'upload_btn'),
+		                        (actions['download'], 'download_btn') ]:
 			btn = self.glade_xml.get_widget(widget)
 			action.connect_proxy(btn)
 		
@@ -98,8 +98,12 @@ class GuppyWindow:
 		else:
 			show_parent_dir = False
 
-		self.pvr_model = PVRFileSystemModel(self.datadir, show_parent_dir)
-		self.pc_model = PCFileSystemModel(self.datadir, show_parent_dir)
+		self.pc_model = PCFileSystemModel(self.datadir,
+		                                  cwd=getConfValue('PC_CWD'),
+		                                  show_parent_dir=show_parent_dir)
+		self.pvr_model = PVRFileSystemModel(self.datadir,
+		                                    cwd=getConfValue('PVR_CWD'),
+		                                    show_parent_dir=show_parent_dir)
 		
 		self.pc_path_entry_box = self.glade_xml.get_widget('pc_path_entry_box')
 		self.pvr_path_entry_box = self.glade_xml.get_widget('pvr_path_entry_box')
@@ -147,7 +151,7 @@ class GuppyWindow:
 		
 		self.last_file_transfer = None
 		self.quit_after_transfer = False
-		
+
 	def initUIManager(self):
 		"""Initialise the UIManager.
 		
@@ -799,6 +803,10 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		return True
 
 	def reallyQuit(self):
+		# Save current working directory path
+		setConfValue('PC_CWD', self.pc_model.getCWD())
+		setConfValue('PVR_CWD', self.pvr_model.getCWD())
+		
 		gtk.main_quit()
 
 	def showNoFileOperationDialog(self):
