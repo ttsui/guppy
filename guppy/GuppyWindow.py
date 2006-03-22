@@ -148,6 +148,7 @@ class GuppyWindow:
 		self.transfer_thread.start()
 	
 		self.turbo = False
+		self.turbo_warn = True
 		
 		self.last_file_transfer = None
 		self.quit_after_transfer = False
@@ -792,7 +793,24 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 
 	def on_turbo_toggled(self, widget, data=None):
 		self.turbo = widget.get_active()
+		
+		if self.turbo and self.turbo_warn:
+			dialog = gtk.MessageDialog(message_format=_('You can not use your PVR remote control when Turbo mode is on.'),
+			                           type=gtk.MESSAGE_WARNING,
+			                           buttons=gtk.BUTTONS_CLOSE)
 
+			checkbox = gtk.CheckButton(_("Warn me when I enable Turbo mode"))
+			checkbox.set_active(self.turbo_warn)
+			checkbox.connect('toggled', self.on_turbo_warn_toggled)
+			checkbox.show()
+
+			dialog.vbox.pack_end(checkbox)
+			dialog.run()
+			dialog.destroy()			
+
+	def on_turbo_warn_toggled(self, widget):
+		self.turbo_warn = widget.get_active()
+		
 	def on_upload_btn_clicked(self, widget, data=None):
 		self.transferFile('upload')
 
