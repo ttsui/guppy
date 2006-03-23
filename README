@@ -22,14 +22,17 @@ PyGtk  2.6 - http://pygtk.org
 Installing Guppy
 ================
 1. You can install guppy with the following command
-	$ cd guppy-0.0.5/guppy
-	$ python setup.py install --prefix <INSTALL PREFIX>
-<INSTALL PREFIX> is the location where you wish to install Guppy, e.g. /usr
+	$ tar jxf guppy-0.0.91.tar.bz2
+	$ su -
+	$ make install
+	 
+Set the environment variable DESTDIR to install into a location other than /usr/local E.g.
+	$ make DESTDIR=/usr/ install
 
 
 Note: You can also running Guppy without installing it.
 1. Go into the guppy directory and run Guppy.
-	$ cd guppy-0.0.5/guppy
+	$ cd guppy-0.0.91/guppy
 	$ ./guppy
 
 
