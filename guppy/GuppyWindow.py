@@ -344,6 +344,26 @@ class GuppyWindow:
 	
 		Return: True if all files deleted.
 		"""
+		msg = '<b>' + _('Are you sure you want to permanently delete') + '\n'
+		
+		files_len =  len(files)
+		if files_len > 1:
+			msg += ' ' + _('the') + ' ' + str(files_len) + ' ' + _('selected items?')
+		else:
+			msg += ' "' + files[0] + '"?'
+			
+		msg += '</b>\n\n' + _('If you delete an item, it is permanently lost.')
+		
+		dialog = gtk.MessageDialog(type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_CANCEL)
+		dialog.set_markup(msg)
+		dialog.add_button(gtk.STOCK_DELETE, 0)
+		
+		response = dialog.run()
+		dialog.destroy()
+
+		if response == gtk.RESPONSE_CANCEL or response == gtk.RESPONSE_DELETE_EVENT:
+			return False
+		
 		retval = True
 		for name in files:
 			deleted = False
@@ -739,6 +759,9 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			model, files = selection.get_selected_rows()
 			if len(files) == 1:
 				self.on_rename_btn_clicked(None, treeview, fs_model)
+		# <Delete>: Delete selected files.
+		elif event.keyval == 65535:
+			self.on_delete_btn_clicked(None, treeview, fs_model)
 	
 	def on_treeview_row_activated(self, widget, path, col, fs_model):
 		model = widget.get_model()
@@ -806,7 +829,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 
 			dialog.vbox.pack_end(checkbox)
 			dialog.run()
-			dialog.destroy()			
+			dialog.destroy()
 
 	def on_turbo_warn_toggled(self, widget):
 		self.turbo_warn = widget.get_active()
