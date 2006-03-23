@@ -1,3 +1,13 @@
+guppy-0.0.91: 23 March 2006
+	- New icons for REC/MP3/TAP files
+	- Use icons from desktop icon theme
+	- Improve performance of file operations
+	- Fix bug with date and size column sort
+	- Retain file modification time of downloaded files
+	- Remember what directory on the PVR/PC you were in last time
+	- Connect F2 key to rename selected file
+	- Connect Delete key to delete selected files
+
 guppy-0.0.90: 7 Feb 2006
 	- New file management features
 	     o Delete files/directories
