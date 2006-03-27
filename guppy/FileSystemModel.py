@@ -494,17 +494,22 @@ class PVRFileSystemModel(FileSystemModel):
 		self.puppy.delete(self.abspath(file))
 
 	def exists(self, file):
-		if file[0] != self.slash:
-			file = self.abspath(file)
-			
-		print 'FIXME!\nFIXME!\nFIXME!: PVRFileSystemModel::exists()'
-		pvr_files = self.puppy.listDir(file)
-		return True
-#		pvr_files = self.puppy.listDir(self.current_dir)
+		# puppy.listDir() can not list files so instead we list the parent
+		# directory and search for the file in there.
 		
-#		for p_file in pvr_files:
-#			if p_file[1] == file:
-#				return True
+		# Get parent directory
+		if file[0] == self.slash:
+			last_slash = file.rfind(self.slash) 
+			parent_dir = file[:last_slash]
+			file = file[last_slash+1:]
+		else:
+			parent_dir = self.current_dir
+
+		pvr_files = self.puppy.listDir(parent_dir)
+		
+		for p_file in pvr_files:
+			if p_file[1] == file:
+				return True
 			
 		return False
 	
