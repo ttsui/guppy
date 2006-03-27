@@ -14,5 +14,6 @@ dist:
 	# Make Fedora RPM
 	ln -sf setup.cfg-suse setup.cfg
 	python setup.py bdist_rpm
+	rm -f setup.cfg
 
 .PHONY: install clean dist
