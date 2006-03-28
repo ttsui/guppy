@@ -1294,9 +1294,6 @@ class TransferThread(threading.Thread):
 				gtk.gdk.threads_enter()
 				progress_bar.set_fraction(float(percent)/100)
 				progress_bar.set_text('(' + transfer_time['remaining'] + ' ' + _('Remaining') + ')')
-
-				while gtk.events_pending():
-					gtk.main_iteration()
 				gtk.gdk.threads_leave()
 
 			# Disable turbo mode. The PVR remote control can not be used if
