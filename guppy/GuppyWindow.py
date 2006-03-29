@@ -785,6 +785,18 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 					self.pvr_path_bar.setPath(path)
 					self.pvr_path_bar.show()
 				self.pvr_path_entry.set_text(path)
+
+	def on_transfer_cancel_btn_clicked(self, widget, file_transfer):
+		state = widget.get_data('state')
+		if state == 'remove':
+			file_transfer.cancel()
+			
+			progress_box = file_transfer.xml.get_widget('progress_box')
+			progress_box.destroy()
+		elif state == 'stop':
+			if file_transfer == self.last_file_transfer:
+				self.last_file_transfer.setQuitAfterTransfer(False)
+			self.puppy.cancelTransfer()
 			
 	def on_transfer_clear_btn_clicked(self, widget, data=None):
 		# Loop until we get a Queue.Empty exception
@@ -801,18 +813,6 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			
 	def on_transfer_close_btn_clicked(self, widget, data=None):
 		self.show_file_transfer_action.set_active(False)
-
-	def on_transfer_remove_btn_clicked(self, widget, file_transfer):
-		file_transfer.cancel()
-		
-		progress_box = file_transfer.xml.get_widget('progress_box')
-		progress_box.destroy()
-
-	def on_transfer_stop_btn_clicked(self, widget, file_transfer):
-		# Don't quit if user explicitly stopped the transfer the last transfer
-		if file_transfer == self.last_file_transfer:
-			self.last_file_transfer.setQuitAfterTransfer(False)
-		self.puppy.cancelTransfer()
 
 	def on_turbo_toggled(self, widget, data=None):
 		self.turbo = widget.get_active()
@@ -952,11 +952,10 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			                             date, xml)
 
 			# Connect transfer instance remove button signal handler
-			remove_btn = xml.get_widget('transfer_remove_button')
-			remove_btn.connect('clicked', self.on_transfer_remove_btn_clicked, file_transfer)
-			stop_btn = xml.get_widget('transfer_stop_button')
-			stop_btn.connect('clicked', self.on_transfer_stop_btn_clicked, file_transfer)
-
+			cancel_btn = xml.get_widget('transfer_cancel_button')
+			cancel_btn.connect('clicked', self.on_transfer_cancel_btn_clicked, file_transfer)
+			cancel_btn.set_data('state', 'remove')
+			
 			if file_exists:
 				existing_files.append(file_transfer)
 			else:
@@ -1225,20 +1224,13 @@ class TransferThread(threading.Thread):
 				widget.set_sensitive(True)
 				gtk.gdk.threads_leave()
 		
-			remove_btn = xml.get_widget('transfer_remove_button')	
-			gtk.gdk.threads_enter()
-			remove_btn.hide()
-			gtk.gdk.threads_leave()
-			
-			stop_btn = xml.get_widget('transfer_stop_button')	
-			gtk.gdk.threads_enter()
-			stop_btn.show()
-			gtk.gdk.threads_leave()
+			cancel_btn = xml.get_widget('transfer_cancel_button')	
 
-			# Set width of Stop button to be the same as Remove button
 			gtk.gdk.threads_enter()
-			allocation = remove_btn.get_allocation()
-			stop_btn.set_size_request(allocation.width, allocation.height)
+			allocation = cancel_btn.get_allocation()
+			cancel_btn.set_label(gtk.STOCK_STOP)
+			cancel_btn.set_size_request(allocation.width, allocation.height)
+			cancel_btn.set_data('state', 'stop')
 			gtk.gdk.threads_leave()
 
 			progress_bar = xml.get_widget('transfer_progressbar')
@@ -1339,10 +1331,10 @@ class TransferThread(threading.Thread):
 				widget.set_sensitive(False)
 				gtk.gdk.threads_leave()
 
-			# Swap Stop button for Remove button
+			# Change Stop button to Remove button
 			gtk.gdk.threads_enter()
-			stop_btn.hide()
-			remove_btn.show()
+			cancel_btn.set_data('state', 'remove')
+			cancel_btn.set_label(gtk.STOCK_REMOVE)
 			gtk.gdk.threads_leave()
 
 			file_transfer.complete()
