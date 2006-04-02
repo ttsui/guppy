@@ -105,31 +105,37 @@ class GuppyWindow:
 		                                    cwd=getConfValue('PVR_CWD'),
 		                                    show_parent_dir=show_parent_dir)
 		
-		self.pc_path_entry_box = self.glade_xml.get_widget('pc_path_entry_box')
-		self.pvr_path_entry_box = self.glade_xml.get_widget('pvr_path_entry_box')
+		self.pc_path = {}
+		self.pc_path['entry_box'] = self.glade_xml.get_widget('pc_path_entry_box')
 		
-		self.pc_path_bar = None
-		self.pvr_path_bar = None
+		self.pvr_path = {}
+		self.pvr_path['entry_box'] = self.glade_xml.get_widget('pvr_path_entry_box')
+		
+		self.pc_path['bar'] = None
+		self.pvr_path['bar'] = None
 		if self.no_path_bar_support:
-			self.pc_path_entry_box.show()
-			self.pvr_path_entry_box.show()
+			self.pc_path['entry_box'].show()
+			self.pvr_path['entry_box'].show()
 		else:
-			self.pvr_path_bar = PathBar(self, 'pvr')
-			self.pvr_path_bar.set_border_width(3)
+			self.pvr_path['bar'] = PathBar(self, 'pvr')
+			self.pvr_path['bar'].set_border_width(3)
 			
-			self.pc_path_bar = PathBar(self, 'pc')
-			self.pc_path_bar.set_border_width(3)
+			self.pc_path['bar'] = PathBar(self, 'pc')
+			self.pc_path['bar'].set_border_width(3)
 			
 			pvr_vbox = self.glade_xml.get_widget('pvr_path_vbox')
-			pvr_vbox.pack_start(self.pvr_path_bar, expand=True, fill=True)
-			self.pvr_path_bar.show_all()		
+			pvr_vbox.pack_start(self.pvr_path['bar'], expand=True, fill=True)
+			self.pvr_path['bar'].show_all()		
 	
 			pc_vbox = self.glade_xml.get_widget('pc_path_vbox')
-			pc_vbox.pack_start(self.pc_path_bar, expand=True, fill=True)
-			self.pc_path_bar.show_all()
+			pc_vbox.pack_start(self.pc_path['bar'], expand=True, fill=True)
+			self.pc_path['bar'].show_all()
 	
 			self.updatePathBar(self.pvr_model)
 			self.updatePathBar(self.pc_model)
+
+		actions['goto_pc_dir'].connect('activate', self.on_goto_dir, self.pc_path, self.pc_model)
+		actions['goto_pvr_dir'].connect('activate', self.on_goto_dir, self.pvr_path, self.pvr_model)
 		
 		# Timer to update screen info
 		gobject.timeout_add(GuppyWindow.SCREEN_INFO_UPDATE_INTERVAL, self.updateScreenInfo)
@@ -169,12 +175,17 @@ class GuppyWindow:
 		                         ('View', None, _('_View')),
 		                         ('Transfer', None, _('_Transfer')),
 		                         ('Help', None, _('_Help')),
-                                 ('About', gtk.STOCK_ABOUT , _('_About'), None, None, self.on_about)])
-
-		actiongroup.add_actions([('GotoPCDir', None, _('Goto PC Location'), '<Ctrl>l', None, self.on_goto_pc_dir),
-		                         ('GotoPVRDir', None, _('Goto PVR Location'), '<Ctrl>k', None, self.on_goto_pvr_dir),
+		                         ('About', gtk.STOCK_ABOUT , _('_About'), None, None, self.on_about),
 		                         ('Reload', gtk.STOCK_REFRESH, _('Reload folders'), '<Ctrl>r', None, self.on_reload_dir)])
-			                         
+
+		action = gtk.Action('GotoPVRDir', _('Goto PVR Location'), _('Goto PVR Location'), None)
+		actiongroup.add_action_with_accel(action, '<Ctrl>k')
+		actions['goto_pvr_dir'] = action
+		
+		action = gtk.Action('GotoPCDir', _('Goto PC Location'), _('Goto PCLocation'), None)
+		actiongroup.add_action_with_accel(action, '<Ctrl>l')
+		actions['goto_pc_dir'] = action
+		
 		actiongroup.add_toggle_actions([('QuitAfterTransfer', None, _('Quit After Transfer'), None, None, self.on_quit_after_transfer),
 		                                ('ShowHidden', None, _('Show Hidden Files'), None, _('Show hidden files'), self.on_show_hidden_toggled),
 		                                ('ShowFileTransfer', None, _('Show File Transfer'), None, _('Show File Transfer'), self.on_show_file_transfer_toggled)])
@@ -252,14 +263,16 @@ class GuppyWindow:
 		pc_liststore = gtk.TreeModelSort(pc_liststore)
 		self.pc_liststore = pc_liststore
 		
-		self.pvr_path_entry = self.glade_xml.get_widget('pvr_path_entry')
-		self.pc_path_entry = self.glade_xml.get_widget('pc_path_entry')
+		self.pvr_path['entry'] = self.glade_xml.get_widget('pvr_path_entry')
+		self.pvr_path['entry'].connect('activate', self.on_path_entry_activate, self.pvr_model)
+		self.pvr_path['entry'].connect('key-press-event', self.on_path_entry_key_press, self.pvr_path)
 		
-		self.pvr_path_entry.connect('activate', self.on_path_entry_activate, self.pvr_model)
-		self.pc_path_entry.connect('activate', self.on_path_entry_activate, self.pc_model)
+		self.pc_path['entry'] = self.glade_xml.get_widget('pc_path_entry')
+		self.pc_path['entry'].connect('activate', self.on_path_entry_activate, self.pc_model)
+		self.pc_path['entry'].connect('key-press-event', self.on_path_entry_key_press, self.pc_path)
 		
-		self.pvr_path_entry.set_text(self.pvr_model.getCWD())
-		self.pc_path_entry.set_text(self.pc_model.getCWD())
+		self.pvr_path['entry'].set_text(self.pvr_model.getCWD())
+		self.pc_path['entry'].set_text(self.pc_model.getCWD())
 		
 		for treeview, liststore in (self.pvr_treeview, pvr_liststore), (self.pc_treeview, pc_liststore):
 			treeview.set_model(liststore)
@@ -478,17 +491,12 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			if widget.handler_is_connected(handler_id):
 				widget.disconnect(handler_id)
 
-	def on_goto_pc_dir(self, widget, data=None):
-		if self.pc_path_bar:
-			self.pc_path_bar.hide()		
-			self.pc_path_entry_box.show()
-		self.pc_path_entry.grab_focus()
-
-	def on_goto_pvr_dir(self, widget, data=None):		
-		if self.pvr_path_bar:
-			self.pvr_path_bar.hide()		
-			self.pvr_path_entry_box.show()
-		self.pvr_path_entry.grab_focus()
+	def on_goto_dir(self, widget, path, fs_model):
+		if path['bar']:
+			path['bar'].hide()
+			path['entry'].set_text(fs_model.getCWD())
+			path['entry_box'].show()
+		path['entry'].grab_focus()
 
 	def on_mkdir_btn_clicked(self, widget, treeview, fs_model):
 		try:
@@ -602,19 +610,25 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		if fs_model == self.pc_model:
 			self.updateFreeSpace(self.pc_model)
 			if self.no_path_bar_support == False:
-				self.pc_path_entry_box.hide()
+				self.pc_path['entry_box'].hide()
 				if dir_changed:
-					self.pc_path_bar.setPath(path)
-				self.pc_path_bar.show()
+					self.pc_path['bar'].setPath(path)
+				self.pc_path['bar'].show()
 		else:
 			if self.no_path_bar_support == False:
-				self.pvr_path_entry_box.hide()
+				self.pvr_path['entry_box'].hide()
 				if dir_changed:
-					self.pvr_path_bar.setPath(path)
-				self.pvr_path_bar.show()
-		
+					self.pvr_path['bar'].setPath(path)
+				self.pvr_path['bar'].show()
+
+	def on_path_entry_key_press(self, entry, event, path):
+		# <ESC>: Hide path entry
+		if event.keyval == 65307:
+			if self.no_path_bar_support == False:
+				path['entry_box'].hide()
+				path['bar'].show()
+				
 	def on_pvr_error_btn_clicked(self, widget, data=None):
-		# TODO: Open error dialog
 		self.pvr_error_window.show()
 		widget.hide()
 	
@@ -774,17 +788,17 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			path = fs_model.getCWD()
 			if fs_model == self.pc_model:
 				if self.no_path_bar_support == False:
-					self.pc_path_entry_box.hide()
-					self.pc_path_bar.setPath(path)
-					self.pc_path_bar.show()
-				self.pc_path_entry.set_text(path)
+					self.pc_path['entry_box'].hide()
+					self.pc_path['bar'].setPath(path)
+					self.pc_path['bar'].show()
+				self.pc_path['entry'].set_text(path)
 				self.updateFreeSpace(self.pc_model)
 			else:
 				if self.no_path_bar_support == False:
-					self.pvr_path_entry_box.hide()
-					self.pvr_path_bar.setPath(path)
-					self.pvr_path_bar.show()
-				self.pvr_path_entry.set_text(path)
+					self.pvr_path['entry_box'].hide()
+					self.pvr_path['bar'].setPath(path)
+					self.pvr_path['bar'].show()
+				self.pvr_path['entry'].set_text(path)
 
 	def on_transfer_cancel_btn_clicked(self, widget, file_transfer):
 		state = widget.get_data('state')
@@ -1027,9 +1041,9 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			return
 			
 		if fs_model == self.pvr_model:
-			self.pvr_path_bar.setPath(fs_model.getCWD())
+			self.pvr_path['bar'].setPath(fs_model.getCWD())
 		else:
-			self.pc_path_bar.setPath(fs_model.getCWD())
+			self.pc_path['bar'].setPath(fs_model.getCWD())
 	
 	def updateScreenInfo(self):
 		try:
@@ -1585,7 +1599,7 @@ class PathBar(gtk.Container):
 		if self.fs == 'pvr':
 			path = path.replace('/', '\\')
 			self.guppy.pvr_model.changeDir(path)
-			self.guppy.pvr_path_entry.set_text(path)
+			self.guppy.pvr_path['entry'].set_text(path)
 		else:
 			self.guppy.pc_model.changeDir(path)
 			self.guppy.pc_path_entry.set_text(path)
