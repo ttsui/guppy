@@ -352,30 +352,32 @@ class GuppyWindow:
 		toolbar.set_orientation(gtk.ORIENTATION_VERTICAL)
 		return toolbar
 
-	def deleteFiles(self, files, fs_model):
+	def deleteFiles(self, files, fs_model, warn=True):
 		"""Delete files from file system. Popup error dialog for errors.
 	
 		Return: True if all files deleted.
 		"""
-		msg = '<b>' + _('Are you sure you want to permanently delete') + '\n'
 		
-		files_len =  len(files)
-		if files_len > 1:
-			msg += ' ' + _('the') + ' ' + str(files_len) + ' ' + _('selected items?')
-		else:
-			msg += ' "' + files[0] + '"?'
+		if warn:
+			msg = '<b>' + _('Are you sure you want to permanently delete') + '\n'
 			
-		msg += '</b>\n\n' + _('If you delete an item, it is permanently lost.')
-		
-		dialog = gtk.MessageDialog(type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_CANCEL)
-		dialog.set_markup(msg)
-		dialog.add_button(gtk.STOCK_DELETE, 0)
-		
-		response = dialog.run()
-		dialog.destroy()
-
-		if response == gtk.RESPONSE_CANCEL or response == gtk.RESPONSE_DELETE_EVENT:
-			return False
+			files_len =  len(files)
+			if files_len > 1:
+				msg += ' ' + _('the') + ' ' + str(files_len) + ' ' + _('selected items?')
+			else:
+				msg += ' "' + files[0] + '"?'
+				
+			msg += '</b>\n\n' + _('If you delete an item, it is permanently lost.')
+			
+			dialog = gtk.MessageDialog(type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_CANCEL)
+			dialog.set_markup(msg)
+			dialog.add_button(gtk.STOCK_DELETE, 0)
+			
+			response = dialog.run()
+			dialog.destroy()
+	
+			if response == gtk.RESPONSE_CANCEL or response == gtk.RESPONSE_DELETE_EVENT:
+				return False
 		
 		retval = True
 		for name in files:
@@ -464,7 +466,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		col.set_sort_order(order)
 		data[0].set_sort_column_id(data[1], order)
 
-	def on_delete_btn_clicked(self, widget, treeview, fs_model):
+	def on_delete_btn_clicked(self, widget, treeview, fs_model, warn=True):
 		selection = treeview.get_selection()
 		model, rows = selection.get_selected_rows()
 		
@@ -474,7 +476,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			name = model.get_value(iter, FileSystemModel.NAME_COL)
 			files.append(name)
 			
-		self.deleteFiles(files, fs_model)
+		self.deleteFiles(files, fs_model, warn)
 			
 	def on_download_btn_clicked(self, widget, data=None):
 		self.transferFile('download')
@@ -622,8 +624,9 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 				self.pvr_path['bar'].show()
 
 	def on_path_entry_key_press(self, entry, event, path):
+		keyname = gtk.gdk.keyval_name(event.keyval)
 		# <ESC>: Hide path entry
-		if event.keyval == 65307:
+		if keyname == 'Escape':
 			if self.no_path_bar_support == False:
 				path['entry_box'].hide()
 				path['bar'].show()
@@ -766,16 +769,19 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			actiongrp.set_sensitive(False)
 
 	def on_treeview_key_press(self, treeview, event, fs_model):
-		
+		keyname = gtk.gdk.keyval_name(event.keyval)
 		# <F2>: Rename selected file.
-		if event.keyval == 65471:
+		if keyname == 'F2':
 			selection = treeview.get_selection()
 			model, files = selection.get_selected_rows()
 			if len(files) == 1:
 				self.on_rename_btn_clicked(None, treeview, fs_model)
 		# <Delete>: Delete selected files.
-		elif event.keyval == 65535:
-			self.on_delete_btn_clicked(None, treeview, fs_model)
+		elif keyname == 'Delete':
+			warn = True
+			if event.get_state() & gtk.gdk.SHIFT_MASK:
+				warn = False
+			self.on_delete_btn_clicked(None, treeview, fs_model, warn)
 	
 	def on_treeview_row_activated(self, widget, path, col, fs_model):
 		model = widget.get_model()
@@ -1602,7 +1608,7 @@ class PathBar(gtk.Container):
 			self.guppy.pvr_path['entry'].set_text(path)
 		else:
 			self.guppy.pc_model.changeDir(path)
-			self.guppy.pc_path_entry.set_text(path)
+			self.guppy.pc_path['entry'].set_text(path)
 
 	def on_down_btn_clicked(self, btn):
 		self.queue_resize()
