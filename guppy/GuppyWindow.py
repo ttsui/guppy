@@ -470,6 +470,9 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		selection = treeview.get_selection()
 		model, rows = selection.get_selected_rows()
 		
+		if len(rows) == 0:
+			return
+		
 		files = []
 		for path in rows:
 			iter = model.get_iter(path)
@@ -586,7 +589,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 					if response == CANCEL or response == gtk.RESPONSE_DELETE_EVENT:
 						break
 		
-					deleted = self.deleteFiles([new_name], fs_model)
+					deleted = self.deleteFiles([new_name], fs_model, False)
 					
 					if not deleted:
 						break
@@ -677,6 +680,10 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		
 		selection = treeview.get_selection()
 		model, files = selection.get_selected_rows()
+		
+		# Only a single file can be renamed at a time.
+		if len(files) != 1:
+			return
 		
 		path = files[0]
 		iter = model.get_iter(path)
@@ -772,10 +779,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		keyname = gtk.gdk.keyval_name(event.keyval)
 		# <F2>: Rename selected file.
 		if keyname == 'F2':
-			selection = treeview.get_selection()
-			model, files = selection.get_selected_rows()
-			if len(files) == 1:
-				self.on_rename_btn_clicked(None, treeview, fs_model)
+			self.on_rename_btn_clicked(None, treeview, fs_model)
 		# <Delete>: Delete selected files.
 		elif keyname == 'Delete':
 			warn = True
