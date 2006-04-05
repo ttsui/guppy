@@ -505,7 +505,10 @@ class PVRFileSystemModel(FileSystemModel):
 		else:
 			parent_dir = self.current_dir
 
-		pvr_files = self.puppy.listDir(parent_dir)
+		try:
+			pvr_files = self.puppy.listDir(parent_dir)
+		except PuppyError:
+			return False
 		
 		for p_file in pvr_files:
 			if p_file[1] == file:
