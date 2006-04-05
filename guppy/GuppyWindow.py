@@ -178,16 +178,16 @@ class GuppyWindow:
 		                         ('About', gtk.STOCK_ABOUT , _('_About'), None, None, self.on_about),
 		                         ('Reload', gtk.STOCK_REFRESH, _('Reload folders'), '<Ctrl>r', None, self.on_reload_dir)])
 
-		action = gtk.Action('GotoPVRDir', _('Goto PVR Location'), _('Goto PVR Location'), None)
+		action = gtk.Action('GotoPVRDir', _('Go to PVR Location'), _('Go to PVR Location'), None)
 		actiongroup.add_action_with_accel(action, '<Ctrl>k')
 		actions['goto_pvr_dir'] = action
 		
-		action = gtk.Action('GotoPCDir', _('Goto PC Location'), _('Goto PCLocation'), None)
+		action = gtk.Action('GotoPCDir', _('Go to PC Location'), _('Go to PC Location'), None)
 		actiongroup.add_action_with_accel(action, '<Ctrl>l')
 		actions['goto_pc_dir'] = action
 		
 		actiongroup.add_toggle_actions([('QuitAfterTransfer', None, _('Quit After Transfer'), None, None, self.on_quit_after_transfer),
-		                                ('ShowHidden', None, _('Show Hidden Files'), None, _('Show hidden files'), self.on_show_hidden_toggled),
+		                                ('ShowHidden', None, _('Show Hidden Files'), None, _('Show Hidden Files'), self.on_show_hidden_toggled),
 		                                ('ShowFileTransfer', None, _('Show File Transfer'), None, _('Show File Transfer'), self.on_show_file_transfer_toggled)])
 
 		turbo_act = gtk.ToggleAction('Turbo', _('Tur_bo'), _('Turbo Transfer'), None)
@@ -363,7 +363,7 @@ class GuppyWindow:
 			
 			files_len =  len(files)
 			if files_len > 1:
-				msg += ' ' + _('the') + ' ' + str(files_len) + ' ' + _('selected items?')
+				msg += ' ' + _('the %d selected items?') % files_len
 			else:
 				msg += ' "' + files[0] + '"?'
 				
@@ -393,7 +393,7 @@ class GuppyWindow:
 					msg += _('because you do not have permissions to change it or its parent folder.')
 					dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR)
 					dialog.set_markup(msg)
-					dialog.add_buttons( _('Skip'), SKIP, _('Retry'), RETRY)
+					dialog.add_buttons( _('_Skip'), SKIP, _('_Retry'), RETRY)
 					response = dialog.run()
 					dialog.destroy()
 		
@@ -430,10 +430,9 @@ class GuppyWindow:
 		if not self.puppy.exists():
 			dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
 			                           buttons=gtk.BUTTONS_OK)
-			dialog.set_markup(_('''Guppy can not run because the program Puppy is not available. Please install Puppy.
-
-You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
-
+			msg = _('Guppy cannot run because the program Puppy is not available. Please install Puppy.')
+			msg += '\n\n' + _('You can download Puppy from') + ' <i>http://sourceforge.net/projects/puppy</i>'
+			dialog.set_markup(msg)
 			response = dialog.run()
 			dialog.destroy()
 			return
@@ -508,7 +507,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			name = fs_model.mkdir()
 		except OSError:
 			msg = '<b>' + _('Error while creating folder.') + '</b>\n\n'
-			msg += _('Can not create folder because you do not have permission to write in its parent folder.')
+			msg += _('Cannot create folder because you do not have permission to write in its parent folder.')
 			dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_CLOSE)
 			dialog.set_markup(msg)
 			response = dialog.run()
@@ -563,7 +562,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 					msg += _('because you do not have permissions to change it or its parent folder.')
 					dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR)
 					dialog.set_markup(msg)
-					dialog.add_buttons( _('Skip'), SKIP, _('Retry'), RETRY)
+					dialog.add_buttons( _('_Skip'), SKIP, _('_Retry'), RETRY)
 					response = dialog.run()
 					dialog.destroy()
 		
@@ -581,7 +580,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 					msg += _('is already used in this folder.')
 					dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR)
 					dialog.set_markup(msg)
-					dialog.add_buttons( _('Cancel'), CANCEL,_('Replace'), REPLACE)
+					dialog.add_buttons( _('Cancel'), CANCEL,_('_Replace'), REPLACE)
 					response = dialog.run()
 					dialog.destroy()
 		
@@ -842,7 +841,7 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		self.turbo = widget.get_active()
 		
 		if self.turbo and self.turbo_warn:
-			dialog = gtk.MessageDialog(message_format=_('You can not use your PVR remote control when Turbo mode is on.'),
+			dialog = gtk.MessageDialog(message_format=_('You cannot use your PVR remote control when Turbo mode is on.'),
 			                           type=gtk.MESSAGE_WARNING,
 			                           buttons=gtk.BUTTONS_CLOSE)
 
@@ -922,7 +921,11 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 			else:
 				msg += ' ' + _('PVR')
 			msg += '.\n'
-			msg += _('Do you still want to continue transfer?')	
+			msg += _('Do you still want to continue your')
+			if direction == 'download':
+				msg += ' ' + _('download?')
+			else:
+				msg += ' ' + _('upload?')
 			
 			dialog = gtk.MessageDialog(type=gtk.MESSAGE_QUESTION,
 			                           buttons=gtk.BUTTONS_YES_NO,
@@ -994,14 +997,14 @@ You can download Puppy from <i>http://sourceforge.net/projects/puppy</i>'''))
 		for file in existing_files:
 			if replace_all == False:
 				SKIP, REPLACE, REPLACE_ALL = range(3)
-				msg = _('The file') + ' "' + file.dst + '" ' + _('already exists. Would you like to replace it?')
+				msg = _('The file "%s" already exists. Would you like to replace it?') % file.dst
 				msg2 = _('If you replace an existing file, its contents will be overwritten.')
 				dialog = gtk.MessageDialog(type=gtk.MESSAGE_QUESTION,
 				                           message_format=msg)
 				                           
 				if len(existing_files) > 1:
-					dialog.add_button(_('Replace All'), REPLACE_ALL)
-				dialog.add_buttons( _('Skip'), SKIP, _('Replace'), REPLACE)
+					dialog.add_button(_('Replace _All'), REPLACE_ALL)
+				dialog.add_buttons( _('_Skip'), SKIP, _('_Replace'), REPLACE)
 				response = dialog.run()
 				dialog.destroy()
 	
@@ -1312,7 +1315,7 @@ class TransferThread(threading.Thread):
 				progress_bar.set_text('(' + transfer_time['remaining'] + ' ' + _('Remaining') + ')')
 				gtk.gdk.threads_leave()
 
-			# Disable turbo mode. The PVR remote control can not be used if
+			# Disable turbo mode. The PVR remote control cannot be used if
 			# turbo mode is left on.
 			if self.guppy.turbo == True:
 				self.guppy.puppy.setTurbo(False)
@@ -1341,7 +1344,7 @@ class TransferThread(threading.Thread):
 				if direction == 'download':
 					msg = _('Failed to download:') + '\n' + src_file
 				else:
-					msg = _('Failed to upload: ') + '\n' + src_file
+					msg = _('Failed to upload:') + '\n' + src_file
 
 				self.guppy.pvr_error_window.addError(msg, transfer_error)
 
