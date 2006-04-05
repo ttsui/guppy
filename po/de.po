@@ -1,0 +1,315 @@
+# German translations for PACKAGE package
+# German messages for PACKAGE.
+# Copyright (C) 2006 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Tony Tsui <tony@drifter.laptop>, 2006.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2006-04-05 19:04+1000\n"
+"PO-Revision-Date: 2006-04-05 19:00+1000\n"
+"Last-Translator: Tony Tsui <tsui.tony@gmail.com>\n"
+"Language-Team: German <de@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ISO-8859-1\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: guppy/GuppyWindow.py:173
+msgid "_Quit"
+msgstr ""
+
+#: guppy/GuppyWindow.py:174
+msgid "_File"
+msgstr "_Datei"
+
+#: guppy/GuppyWindow.py:175
+msgid "_View"
+msgstr "_Ansicht"
+
+#: guppy/GuppyWindow.py:176
+msgid "_Transfer"
+msgstr ""
+
+#: guppy/GuppyWindow.py:177
+msgid "_Help"
+msgstr "_Hilfe"
+
+#: guppy/GuppyWindow.py:178
+msgid "_About"
+msgstr "_Info"
+
+#: guppy/GuppyWindow.py:179
+msgid "Reload folders"
+msgstr ""
+
+#: guppy/GuppyWindow.py:181
+msgid "Go to PVR Location"
+msgstr ""
+
+#: guppy/GuppyWindow.py:185
+msgid "Go to PC Location"
+msgstr ""
+
+#: guppy/GuppyWindow.py:189
+msgid "Quit After Transfer"
+msgstr ""
+
+#: guppy/GuppyWindow.py:190
+msgid "Show Hidden Files"
+msgstr ""
+
+#: guppy/GuppyWindow.py:191
+msgid "Show File Transfer"
+msgstr ""
+
+#: guppy/GuppyWindow.py:193
+msgid "Tur_bo"
+msgstr ""
+
+#: guppy/GuppyWindow.py:193
+msgid "Turbo Transfer"
+msgstr ""
+
+#: guppy/GuppyWindow.py:209
+msgid "_Upload"
+msgstr ""
+
+#: guppy/GuppyWindow.py:209
+msgid "Upload File"
+msgstr ""
+
+#: guppy/GuppyWindow.py:221
+msgid "_Download"
+msgstr "_Herunterladen"
+
+#: guppy/GuppyWindow.py:221
+msgid "Download File"
+msgstr ""
+
+#: guppy/GuppyWindow.py:232
+msgid "_Delete"
+msgstr "_Löschen"
+
+#: guppy/GuppyWindow.py:233
+msgid "_Rename"
+msgstr "Umbenennen"
+
+#: guppy/GuppyWindow.py:234
+msgid "Create _Folder"
+msgstr "_Ordner anlegen"
+
+#: guppy/GuppyWindow.py:318
+msgid "Name"
+msgstr "Name"
+
+#: guppy/GuppyWindow.py:332
+msgid "Date"
+msgstr ""
+
+#: guppy/GuppyWindow.py:339
+msgid "Size"
+msgstr "Größe"
+
+#: guppy/GuppyWindow.py:362
+msgid "Are you sure you want to permanently delete"
+msgstr ""
+
+#: guppy/GuppyWindow.py:366
+#, python-format
+msgid "the %d selected items?"
+msgstr ""
+
+#: guppy/GuppyWindow.py:370
+msgid "If you delete an item, it is permanently lost."
+msgstr "Sobald Sie ein Objekt löschen, geht es dauerhaft verloren."
+
+#: guppy/GuppyWindow.py:391
+msgid "Error while deleting."
+msgstr "Fehler beim Löschen."
+
+#: guppy/GuppyWindow.py:391
+msgid "Cannot delete"
+msgstr ""
+
+#: guppy/GuppyWindow.py:393 guppy/GuppyWindow.py:562
+msgid "because you do not have permissions to change it or its parent folder."
+msgstr ""
+
+#: guppy/GuppyWindow.py:396 guppy/GuppyWindow.py:565 guppy/GuppyWindow.py:1007
+msgid "Skip"
+msgstr ""
+
+#: guppy/GuppyWindow.py:396 guppy/GuppyWindow.py:565
+msgid "Retry"
+msgstr ""
+
+#: guppy/GuppyWindow.py:412
+msgid "Failed to delete"
+msgstr ""
+
+#: guppy/GuppyWindow.py:433
+msgid ""
+"Guppy cannot run because the program Puppy is not available. Please install "
+"Puppy."
+msgstr ""
+
+#: guppy/GuppyWindow.py:434
+msgid "You can download Puppy from"
+msgstr ""
+
+#: guppy/GuppyWindow.py:509
+msgid "Error while creating folder."
+msgstr ""
+
+#: guppy/GuppyWindow.py:510
+msgid ""
+"Cannot create folder because you do not have permission to write in its "
+"parent folder."
+msgstr ""
+
+#: guppy/GuppyWindow.py:522
+msgid "Failed to make a folder"
+msgstr ""
+
+#: guppy/GuppyWindow.py:560
+msgid "Error while renaming."
+msgstr ""
+
+#: guppy/GuppyWindow.py:560
+msgid "Cannot rename"
+msgstr ""
+
+#: guppy/GuppyWindow.py:578
+msgid "The item could not be renamed"
+msgstr ""
+
+#: guppy/GuppyWindow.py:579
+msgid "The name"
+msgstr ""
+
+#: guppy/GuppyWindow.py:580
+msgid "is already used in this folder."
+msgstr ""
+
+#: guppy/GuppyWindow.py:583
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: guppy/GuppyWindow.py:583 guppy/GuppyWindow.py:1007
+msgid "Replace"
+msgstr "Ersetzen"
+
+#: guppy/GuppyWindow.py:597
+msgid "Failed to rename"
+msgstr ""
+
+#: guppy/GuppyWindow.py:760 guppy/GuppyWindow.py:762
+msgid "Selection Size"
+msgstr ""
+
+#: guppy/GuppyWindow.py:844
+msgid "You cannot use your PVR remote control when Turbo mode is on."
+msgstr ""
+
+#: guppy/GuppyWindow.py:848
+msgid "Warn me when I enable Turbo mode"
+msgstr ""
+
+#: guppy/GuppyWindow.py:877
+msgid ""
+"It is not possible to delete, rename, or create folders on the PVR during a "
+"file transfer."
+msgstr ""
+
+#: guppy/GuppyWindow.py:896
+msgid "Downloading"
+msgstr ""
+
+#: guppy/GuppyWindow.py:901
+msgid "Uploading"
+msgstr ""
+
+#: guppy/GuppyWindow.py:907 guppy/GuppyWindow.py:1041
+msgid "Failed to get free disk space"
+msgstr ""
+
+#: guppy/GuppyWindow.py:918
+msgid "Not enough disk space available on your"
+msgstr ""
+
+#: guppy/GuppyWindow.py:920
+msgid "PC"
+msgstr ""
+
+#: guppy/GuppyWindow.py:922
+msgid "PVR"
+msgstr ""
+
+#: guppy/GuppyWindow.py:924
+msgid "Do you still want to continue your"
+msgstr ""
+
+#: guppy/GuppyWindow.py:926
+msgid "download?"
+msgstr ""
+
+#: guppy/GuppyWindow.py:928
+msgid "upload?"
+msgstr ""
+
+#: guppy/GuppyWindow.py:1000
+#, python-format
+msgid "The file \"%s\" already exists. Would you like to replace it?"
+msgstr ""
+
+#: guppy/GuppyWindow.py:1001
+msgid "If you replace an existing file, its contents will be overwritten."
+msgstr ""
+
+#: guppy/GuppyWindow.py:1006
+msgid "Replace All"
+msgstr "Alle ersetzen"
+
+#: guppy/GuppyWindow.py:1036 guppy/GuppyWindow.py:1045
+msgid "Free Space"
+msgstr ""
+
+#: guppy/GuppyWindow.py:1070
+msgid "PVR not connected"
+msgstr ""
+
+#: guppy/GuppyWindow.py:1105
+msgid "Failed to get list of files"
+msgstr ""
+
+#: guppy/GuppyWindow.py:1155
+msgid "ERROR"
+msgstr ""
+
+#: guppy/GuppyWindow.py:1315
+msgid "Remaining"
+msgstr ""
+
+#: guppy/GuppyWindow.py:1339
+msgid "Finished"
+msgstr ""
+
+#: guppy/GuppyWindow.py:1341
+msgid "Transfer Failed"
+msgstr ""
+
+#: guppy/GuppyWindow.py:1345
+msgid "Failed to download:"
+msgstr ""
+
+#: guppy/GuppyWindow.py:1347
+msgid "Failed to upload:"
+msgstr ""
+
+#: guppy/puppy.py:369
+msgid ""
+"PVR not connected. Please check that your computer is connected to the PVR."
+msgstr ""
