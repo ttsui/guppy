@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2006-04-05 19:04+1000\n"
+"POT-Creation-Date: 2006-04-06 08:17+1000\n"
 "PO-Revision-Date: 2006-04-05 19:00+1000\n"
 "Last-Translator: Tony Tsui <tsui.tony@gmail.com>\n"
 "Language-Team: German <de@li.org>\n"
@@ -139,12 +139,12 @@ msgid "because you do not have permissions to change it or its parent folder."
 msgstr ""
 
 #: guppy/GuppyWindow.py:396 guppy/GuppyWindow.py:565 guppy/GuppyWindow.py:1007
-msgid "Skip"
-msgstr ""
+msgid "_Skip"
+msgstr "Ü_berspringen"
 
 #: guppy/GuppyWindow.py:396 guppy/GuppyWindow.py:565
-msgid "Retry"
-msgstr ""
+msgid "_Retry"
+msgstr "_Wiederholen"
 
 #: guppy/GuppyWindow.py:412
 msgid "Failed to delete"
@@ -199,8 +199,9 @@ msgid "Cancel"
 msgstr "Abbrechen"
 
 #: guppy/GuppyWindow.py:583 guppy/GuppyWindow.py:1007
-msgid "Replace"
-msgstr "Ersetzen"
+#, fuzzy
+msgid "_Replace"
+msgstr "_Ersetzen"
 
 #: guppy/GuppyWindow.py:597
 msgid "Failed to rename"
@@ -270,8 +271,9 @@ msgid "If you replace an existing file, its contents will be overwritten."
 msgstr ""
 
 #: guppy/GuppyWindow.py:1006
-msgid "Replace All"
-msgstr "Alle ersetzen"
+#, fuzzy
+msgid "Replace _All"
+msgstr "_Alle ersetzen"
 
 #: guppy/GuppyWindow.py:1036 guppy/GuppyWindow.py:1045
 msgid "Free Space"
