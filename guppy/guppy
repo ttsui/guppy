@@ -60,12 +60,18 @@ if os.path.exists(os.path.join(basedir, 'lib')):
 	if not os.path.exists(datadir):
 		raise SystemExit("ERROR: Could not find required directory: %s" %
 	                    datadir)
+	                    
+	langdir = os.path.join(basedir, 'share/locale')
+	if not os.path.exists(langdir):
+		raise SystemExit("ERROR: Could not find required directory: %s" %
+	                    langdir)
 elif not os.path.exists(os.path.join(basedir, dirname)):
 	raise SystemExit("ERROR: Could not find required directory: %s" %
 	                 os.path.join(basedir, dirname))
 else:
 	pythondir = basedir
 	datadir = os.path.join(basedir, dirname)
+	langdir = os.path.join(basedir, 'locale')
 	
 sys.path.insert(0, pythondir)
 
@@ -76,9 +82,9 @@ from guppy import GuppyWindow
 
 if __name__ == "__main__":
 	locale.setlocale(locale.LC_ALL, '')
-	gettext.bindtextdomain(dirname, 'i18n')
+	gettext.bindtextdomain(dirname, langdir)
 	gettext.textdomain(dirname)
-	gettext.install(dirname, 'i18n', unicode=1)
+	gettext.install(dirname, langdir, unicode=1)
 	
 	guppy = GuppyWindow.GuppyWindow(datadir + '/')
 	guppy.run()

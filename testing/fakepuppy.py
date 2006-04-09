@@ -25,7 +25,7 @@ import signal
 import fcntl
 
 FAIL_START    = False
-FAIL_TRANSFER = True
+FAIL_TRANSFER = False
 FAIL_LIST     = False
 FAIL_SIZE     = True
 

@@ -58,17 +58,6 @@ docs_dir = os.path.join(prefix, 'share', 'doc', 'guppy')
 '''
 		filename = os.path.join(self.build_dir, 'guppy', '__installed__.py')
 		install = self.distribution.get_command_obj('install')
-		# Overkill: Don't generate the file if we have the same prefix
-		if (os.path.exists(filename) and not newer(__file__, filename)):
-			d = {}
-			try:
-					# This may have security implications, but do we care?
-					execfile(filename, {}, d)	
-			except Exception, e:
-					raise SystemExit('Error: %s' % e)
-			if d.get('prefix') == install.prefix:
-					return install_lib.install(self)
-
 		self.mkpath(os.path.dirname(filename))
 		fp = open(filename, 'w')
 		fp.write(installed_template % dict(prefix=install.prefix))
@@ -93,7 +82,6 @@ setup(name='guppy',
 	license=about.LICENSE,
 	packages=['guppy'],
 	scripts=scripts,
-	data_files=data_files)
-	# FIXME: Disable po and __installed__.py files for now. 
-	#cmdclass={'install_data': InstallData, 'install_lib': InstallLib})
+	data_files=data_files,
+	cmdclass={'install_data': InstallData})
 
