@@ -415,6 +415,13 @@ class GuppyWindow:
 		self.updateTreeViews(fs_model, True)
 		self.updateFreeSpace(fs_model)
 		
+		if isinstance(fs_model, PCFileSystemModel):
+			path_bar = self.pc_path['bar']
+		else:
+			path_bar = self.pvr_path['bar']
+			
+		path_bar.setPath(fs_model.getCWD(), update_btns=False)
+		
 		return retval
 	
 	def hiddenFileFilter(self, model, iter, data=None):
@@ -1663,7 +1670,7 @@ class PathBar(gtk.Container):
 				break
 		self.first_scrolled_btn = i + 1
 		
-	def setPath(self, path):
+	def setPath(self, path, update_btns=True):
 		path = path.replace('\\', '/')
 		path = os.path.normpath(path)
 		# os.path.normpath() doesn't normalise '//' to '/'
@@ -1671,7 +1678,7 @@ class PathBar(gtk.Container):
 			path = '/'
 		
 		# Check if we are changing to a dir on the same path
-		if self.updatePathBtns(path):
+		if update_btns and self.updatePathBtns(path):
 			return
 		
 		self.path = path
