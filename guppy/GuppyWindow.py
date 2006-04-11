@@ -1113,12 +1113,16 @@ class GuppyWindow:
 					pass
 
 			model.changeDir()
-			selection.handler_unblock(handler_id)
 			
 			# Reselect rows
 			for path in selected_rows[1]:
 				selection.select_path(path)
 
+			# Call signal handler explicitly because it will not be called if no
+			# rows are reselected, i.e. not paths in selected_rows[] are valid.
+			self.on_treeview_changed(selection, model)
+			
+			selection.handler_unblock(handler_id)
 
 class PVRErrorWindow:
 	ICON_COL, ICON_SIZE_COL, MSG_COL, OUTPUT_COL = range(4)
