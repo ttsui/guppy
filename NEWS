@@ -1,3 +1,8 @@
+guppy-0.0.92: 
+	- Add application icon
+	- Fix freeze when scrolling during a transfer
+	- Various fixes to update user interface after deleting files.
+
 guppy-0.0.91: 23 March 2006
 	- New icons for REC/MP3/TAP files
 	- Use icons from desktop icon theme
