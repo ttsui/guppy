@@ -21,7 +21,12 @@ DESCRIPTION='Topfield PVR File Downloader'
 AUTHOR = 'Tony Tsui'
 AUTHOR_EMAIL = 'tsui.tony@gmail.com'
 # List of additional contributors. Format: 'Name Email'
-CONTRIBUTORS = [ 'Tango Desktop Project http://tango-project.org' ]
+CONTRIBUTORS = [ 'Icons by:', 
+                 'Tango Desktop Project http://tango-project.org',
+                 'Peter Appleyard',
+					  'Translations by:',
+                 'Jürgen Bausa',
+]
 WEBSITE = 'http://guppy.nongnu.org'
 COPYRIGHT = 'Copyright (C) 2005-2006 Tony Tsui'
 LICENSE = 'GNU Public License & CC-by-SA 2.5 License'
