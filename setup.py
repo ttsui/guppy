@@ -65,7 +65,7 @@ docs_dir = os.path.join(prefix, 'share', 'doc', 'guppy')
 		return install_lib.install(self) + [filename]
 
 data_files = [
-	('share/doc/guppy', ('AUTHORS', 'COPYING', 'README', 'NEWS')),
+	('share/doc/guppy', ('AUTHORS', 'COPYING', 'README', 'NEWS', 'CONTRIBUTORS')),
 	('share/guppy', listfiles('guppy', '*.glade')),
 	('share/guppy', listfiles('guppy', '*.xml')),
 	('share/guppy', listfiles('guppy', '*.png')),

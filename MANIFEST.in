@@ -1,4 +1,4 @@
-include AUTHORS COPYING MANIFEST.in NEWS README
+include AUTHORS COPYING MANIFEST.in NEWS README CONTRIBUTORS
 include setup.py Makefile setup.cfg-suse setup.cfg-fedora
 recursive-include doc *.dia *.png *.txt
 recursive-include guppy *.py *.glade *.xml *.png *.svg
