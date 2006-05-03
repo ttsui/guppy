@@ -67,8 +67,9 @@ class FileSystemModel(gtk.ListStore):
 	
 	icon_theme = gtk.icon_theme_get_default()
 	theme_change_callback = []
-	
-	@staticmethod
+
+# Can't use @staticmethod decorator because Python 2.3 doesn't support it
+#	@staticmethod
 	def __connect_theme_change_callback(callback):
 		""" Register theme change callback functions from each FileSystemModel
 		    instance.
@@ -77,8 +78,12 @@ class FileSystemModel(gtk.ListStore):
 		    with the new icons.
 		"""
 		FileSystemModel.theme_change_callback.append(callback)
-		
-	@staticmethod
+# Use staticmethod() instead of @staticmethod decorator because Python 2.3
+# doesn't support it
+	__connect_theme_change_callback = staticmethod(__connect_theme_change_callback)
+
+# Can't use @staticmethod decorator because Python 2.3 doesn't support it
+#	@staticmethod
 	def __load_icons(icon_theme, datadir):
 		""" Load icons for files, directories, video and audio files.
 		
@@ -143,14 +148,21 @@ class FileSystemModel(gtk.ListStore):
 				callback()
 		
 		FileSystemModel.icons_loaded = True
-	
-	@staticmethod
+# Use staticmethod() instead of @staticmethod decorator because Python 2.3
+# doesn't support it
+	__load_icons = staticmethod(__load_icons)
+
+# Can't use @staticmethod decorator because Python 2.3 doesn't support it	
+#	@staticmethod
 	def getIconForFile(file):
 		extension = file[-4:].lower()
 		if FileSystemModel.icon_dict.has_key(extension):
 			return FileSystemModel.icon_dict[extension]
 		else:
 			return FileSystemModel.file_icon
+# Use staticmethod() instead of @staticmethod decorator because Python 2.3
+# doesn't support it
+	getIconForFile = staticmethod(getIconForFile)
 	
 	def __init__(self, datadir, show_parent_dir=False):
 		self.current_dir = None
