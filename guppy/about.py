@@ -23,7 +23,7 @@ AUTHOR_EMAIL = 'tsui.tony@gmail.com'
 # List of additional contributors. Format: 'Name Email'
 CONTRIBUTORS = [ 'Icons by:', 
                  'Tango Desktop Project http://tango-project.org',
-                 'Peter Appleyard',
+                 'Peter Appleyard peter@whodaman.com.au',
 					  'Translations by:',
                  'Jürgen Bausa',
 ]
