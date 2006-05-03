@@ -1331,17 +1331,20 @@ class TransferThread(threading.Thread):
 			if self.guppy.turbo == True:
 				self.guppy.puppy.setTurbo(False)
 
-			# Set modification time of downloaded file to the same time as the
+			# Set modification time of downloaded file to the same time
 			# as on the PVR.
 			if transfer_successful and direction == 'download':
-				# Parse date string
-				time_struct = time.strptime(file_transfer.file_date, '%a %b %d %Y')
-				
-				# Convert to seconds since the epoch
-				time_secs = time.mktime(time_struct)
-				
-				# Set modification time
-				os.utime(dst_file, (int(time.time()), time_secs))
+				try:
+					# Parse date string
+					time_struct = time.strptime(file_transfer.file_date, '%a %b %d %Y')
+					
+					# Convert to seconds since the epoch
+					time_secs = time.mktime(time_struct)
+					
+					# Set modification time
+					os.utime(dst_file, (int(time.time()), time_secs))
+				except:
+					pass
 			
 			gtk.gdk.threads_enter()
 			if transfer_successful:
