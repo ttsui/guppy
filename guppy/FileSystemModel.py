@@ -723,7 +723,7 @@ class DirectoryNode:
 		try:
 			return self.sub_directories[dir]
 		except KeyError:
-			return None
+			return None, None
 		
 	def getDirectories(self):
 		dir_list = []
