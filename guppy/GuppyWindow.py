@@ -65,7 +65,9 @@ class GuppyWindow:
 		gtk.glade.set_custom_handler(self.customWidgetHandler)
 		
 		# Load glade file
-		self.glade_xml = gtk.glade.XML(self.glade_file, None, gettext.textdomain())
+		self.glade_xml = gtk.glade.XML(self.glade_file,
+		                               None,
+		                               gettext.textdomain())
 		
 		# Connect callback functions in glade file to functions
 		self.glade_xml.signal_autoconnect(self)
@@ -249,6 +251,16 @@ class GuppyWindow:
 	def customWidgetHandler(self, glade, func_name, widget_name, str1, str2, int1, int2, *args):
 		handler = getattr(self, func_name)
 		return handler(str1, str2, int1, int2)
+		
+	def changeDir(self, fs_model, dir=None):
+		try:
+			return fs_model.changeDir(dir)
+		except OSError:
+			if dir == None:
+				dir = fs_model.getCWD()
+			self.showErrorDialog(_('The folder contents could not be displayed.'),
+								 _('You do not have the permissions necessary to view the contents of "%s".') % dir)
+			return False
 		
 	def createFileTrees(self):	
 		self.pvr_treeview = self.glade_xml.get_widget('pvr_treeview')	
@@ -613,7 +625,7 @@ class GuppyWindow:
 	def on_path_entry_activate(self, widget, fs_model):
 		path = widget.get_text()
 
-		dir_changed = fs_model.changeDir(path)
+		dir_changed = self.changeDir(fs_model, path)
 	
 		if dir_changed == False:
 			widget.set_text(fs_model.getCWD())
@@ -800,7 +812,7 @@ class GuppyWindow:
 		type = model.get_value(iter, FileSystemModel.TYPE_COL)
 		
 		if type == 'd':
-			fs_model.changeDir(name)
+			self.changeDir(fs_model, name)
 			path = fs_model.getCWD()
 			if fs_model == self.pc_model:
 				if self.no_path_bar_support == False:
@@ -881,9 +893,14 @@ class GuppyWindow:
 		gtk.main_quit()
 
 	def showNoFileOperationDialog(self):
-		dialog = gtk.MessageDialog(message_format=_('It is not possible to delete, rename, or create folders on the PVR during a file transfer.'),
+		self.showErrorDialog(_('It is not possible to delete, rename, or create folders on the PVR during a file transfer.'))
+
+	def showErrorDialog(self, msg, msg2=None):
+		dialog = gtk.MessageDialog(message_format=msg,
 		                           type=gtk.MESSAGE_ERROR,
 		                           buttons=gtk.BUTTONS_CLOSE)
+		if msg2:
+			dialog.format_secondary_text(msg2)
 		dialog.run()
 		dialog.destroy()
 		
@@ -966,7 +983,9 @@ class GuppyWindow:
 				dst_file = dst_dir + '\\' + file
 				file_exists = self.pvr_model.find(file)
 
-			xml = gtk.glade.XML(self.glade_file, 'progress_box')
+			xml = gtk.glade.XML(self.glade_file,
+			                    'progress_box',
+			                    gettext.textdomain())			                    
 			xml.signal_autoconnect(self)		
 
 			progress_box = xml.get_widget('progress_box')
@@ -1112,7 +1131,7 @@ class GuppyWindow:
 					self.pvr_error_window.addError(_('Failed to get list of files'), error)
 					pass
 
-			model.changeDir()
+			self.changeDir(model)
 			
 			# Reselect rows
 			for path in selected_rows[1]:
@@ -1133,7 +1152,9 @@ class PVRErrorWindow:
 	LIST_TYPES.insert(OUTPUT_COL, gobject.TYPE_STRING)
 
 	def __init__(self, glade_file):
-		glade_xml = gtk.glade.XML(glade_file, 'pvr_error_window')
+		glade_xml = gtk.glade.XML(glade_file,
+		                          'pvr_error_window',
+		                          gettext.textdomain())
 		# Connect callback functions in glade file to functions
 		glade_xml.signal_autoconnect(self)
 
@@ -1621,15 +1642,25 @@ class PathBar(gtk.Container):
 			self.up_btn.hide()
 			
 	def on_path_btn_clicked(self, widget, path):
-		self.updatePathBtns(path)
-
+		# Deactivate toggle button because the changeDir() may fail. If
+		# changeDir() is successfull updatePathBtns() will activate the toggle
+		# button.
+		handler = widget.get_data('handler_id')
+		widget.handler_block(handler)
+		widget.set_active(False)
+		widget.handler_unblock(handler)
+		
 		if self.fs == 'pvr':
 			path = path.replace('/', '\\')
-			self.guppy.pvr_model.changeDir(path)
+			if self.guppy.changeDir(self.guppy.pvr_model, path) is False:
+				return
 			self.guppy.pvr_path['entry'].set_text(path)
 		else:
-			self.guppy.pc_model.changeDir(path)
+			if self.guppy.changeDir(self.guppy.pc_model, path) is False:
+				return
 			self.guppy.pc_path['entry'].set_text(path)
+
+		self.updatePathBtns(path)
 
 	def on_down_btn_clicked(self, btn):
 		self.queue_resize()
