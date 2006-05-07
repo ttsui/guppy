@@ -349,6 +349,10 @@ class PCFileSystemModel(FileSystemModel):
 		if not os.access(dir, os.F_OK):
 			return False
 
+		if not os.access(dir, os.R_OK):
+			# Call os.listdir() to raise the OSError for us
+			os.listdir(dir)
+
 		self.current_dir = dir
 			
 		if len(self) > 0:
@@ -356,7 +360,7 @@ class PCFileSystemModel(FileSystemModel):
 		
 		# Parent directory
 		if self.show_parent_dir:
-			self.append(['d', gtk.STOCK_DIRECTORY, '..', '', ''])
+			self.append(['d', FileSystemModel.dir_icon, '..', '', ''])
 
 		for file in os.listdir(self.current_dir):
 			try:
@@ -500,7 +504,7 @@ class PVRFileSystemModel(FileSystemModel):
 			
 		# Add ".." directory
 		if self.show_parent_dir:
-			self.append([ 'd', gtk.STOCK_DIRECTORY, '..', '', ''])
+			self.append([ 'd', FileSystemModel.dir_icon, '..', '', ''])
 
 	def delete(self, file):
 		self.puppy.delete(self.abspath(file))
