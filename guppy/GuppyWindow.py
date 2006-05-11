@@ -41,7 +41,7 @@ class GuppyWindow:
 	# Quit command to put on transfer queue
 	QUIT_CMD = 'Quit'
 	
-	def __init__(self, datadir=''):	
+	def __init__(self, datadir='', dirname=None):	
 		# The PathBar widget only works with PyGtk 2.8 and greater
 		major, minor, micro = gtk.pygtk_version
 		if major <= 2 and minor < 8:
@@ -67,7 +67,7 @@ class GuppyWindow:
 		# Load glade file
 		self.glade_xml = gtk.glade.XML(self.glade_file,
 		                               None,
-		                               gettext.textdomain())
+		                               dirname)
 		
 		# Connect callback functions in glade file to functions
 		self.glade_xml.signal_autoconnect(self)
@@ -371,18 +371,20 @@ class GuppyWindow:
 		"""
 		
 		if warn:
-			msg = '<b>' + _('Are you sure you want to permanently delete') + '\n'
+			msg = _('Are you sure you want to permanently delete')
 			
 			files_len =  len(files)
 			if files_len > 1:
 				msg += ' ' + _('the %d selected items?') % files_len
 			else:
-				msg += ' "' + files[0] + '"?'
+				msg += ' "%s"?' % files[0]
 				
-			msg += '</b>\n\n' + _('If you delete an item, it is permanently lost.')
+			msg2 = _('If you delete an item, it is permanently lost.')
 			
-			dialog = gtk.MessageDialog(type=gtk.MESSAGE_QUESTION, buttons=gtk.BUTTONS_CANCEL)
-			dialog.set_markup(msg)
+			dialog = gtk.MessageDialog(type=gtk.MESSAGE_WARNING,
+			                           buttons=gtk.BUTTONS_CANCEL,
+			                           message_format=msg)
+			dialog.format_secondary_text(msg2)
 			dialog.add_button(gtk.STOCK_DELETE, 0)
 			
 			response = dialog.run()
