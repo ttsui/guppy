@@ -767,8 +767,9 @@ class GuppyWindow:
 		"""
 		model, files = widget.get_selected_rows()
 		
-		file_count = len(files)
 		total_size = 0
+		# Don't enable action group unless are files selected.
+		enable_actiongrp = False
 		for path in files:
 			iter = model.get_iter(path)
 			type = model.get_value(iter, FileSystemModel.TYPE_COL)
@@ -776,11 +777,9 @@ class GuppyWindow:
 			size = model.get_value(iter, FileSystemModel.SIZE_COL)
 			if type != 'd':
 				total_size += convertToBytes(size)
+				enable_actiongrp = True
 
-		if total_size > 0:
-			msg = _('Selection Size') + ': ' + humanReadableSize(total_size)
-		else:
-			msg = _('Selection Size') + ':'
+		msg = _('Selection Size') + ': ' + humanReadableSize(total_size)
 		
 		if isinstance(fs_model, PCFileSystemModel):
 			label = self.pc_total_size_label
@@ -790,7 +789,7 @@ class GuppyWindow:
 			actiongrp = self.download_actiongrp
 			
 		label.set_text(msg)
-		if total_size > 0:
+		if enable_actiongrp > 0:
 			actiongrp.set_sensitive(True)
 		else:
 			actiongrp.set_sensitive(False)
@@ -967,8 +966,13 @@ class GuppyWindow:
 		self.show_file_transfer_action.set_active(True)
 
 		existing_files = []
+		file_transfer = None
 		for path in files:
 			iter = model.get_iter(path)
+			
+			if model.get_value(iter, FileSystemModel.TYPE_COL) == 'd':
+				continue
+			
 			file = model.get_value(iter, FileSystemModel.NAME_COL)
 			date = model.get_value(iter, FileSystemModel.DATE_COL)
 
