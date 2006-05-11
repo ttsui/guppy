@@ -77,14 +77,15 @@ sys.path.insert(0, pythondir)
 
 import locale
 import gettext
+import gtk
 
 from guppy import GuppyWindow
 
 if __name__ == "__main__":
 	locale.setlocale(locale.LC_ALL, '')
-	gettext.bindtextdomain(dirname, langdir)
-	gettext.textdomain(dirname)
+	gtk.glade.bindtextdomain(dirname, langdir)
+	gtk.glade.textdomain(dirname)
 	gettext.install(dirname, langdir, unicode=1)
 	
-	guppy = GuppyWindow.GuppyWindow(datadir + '/')
+	guppy = GuppyWindow.GuppyWindow(datadir + '/', dirname)
 	guppy.run()
