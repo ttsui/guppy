@@ -109,7 +109,7 @@ msgstr "Das Element konnte nicht umbenannt werden"
 #, python-format
 msgid ""
 "You do not have the permissions necessary to view the contents of \"%s\"."
-msgstr ""
+msgstr "Sie besitzen nicht die Rechte, um den Inhalt von\"%s\" anzusehen."
 
 #: guppy/GuppyWindow.py:330
 msgid "Name"
@@ -345,11 +345,11 @@ msgstr "Datei Übertragung anzeigen"
 
 #: guppy/guppy.glade.h:3
 msgid "<b>From:</b>"
-msgstr ""
+msgstr "<b>Von:</b>"
 
 #: guppy/guppy.glade.h:4
 msgid "<b>To:</b>"
-msgstr ""
+msgstr "<b>Bis:</b>"
 
 #: guppy/guppy.glade.h:6
 msgid "Enable Turbo Mode"
@@ -357,15 +357,15 @@ msgstr "Warnen, wenn ich den Turbo-Modus einschalte"
 
 #: guppy/guppy.glade.h:7
 msgid "PC Location:"
-msgstr "Gehe zu PC"
+msgstr "Gehe zu PC:"
 
 #: guppy/guppy.glade.h:8
 msgid "PVR Error Window"
-msgstr ""
+msgstr "PVR Fehler Fenster"
 
 #: guppy/guppy.glade.h:9
 msgid "PVR Location:"
-msgstr "Gehe zu PVR"
+msgstr "Gehe zu PVR:"
 
 #: guppy/guppy.glade.h:10
 msgid "Selection Size:"
@@ -373,20 +373,12 @@ msgstr "Größe der Auswahl"
 
 #: guppy/guppy.glade.h:11
 msgid "Show Errors Communicating with the PVR"
-msgstr ""
+msgstr "Fehler bei der Verbindung mit PVR anzeigen"
 
 #: guppy/guppy.glade.h:13
 msgid "Waiting"
 msgstr "Verbleibend"
 
-#: guppy/guppy.glade.h:14
-msgid "\\DataFiles"
-msgstr ""
-
-#: guppy/guppy.glade.h:15
-msgid "\\localideos"
-msgstr ""
-
 #: guppy/guppy.glade.h:16
 msgid "_View Details"
-msgstr "_View XXX"
+msgstr "_Ansicht Details"
