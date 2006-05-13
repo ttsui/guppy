@@ -53,11 +53,12 @@ class GuppyWindow:
 		gtk.gdk.threads_init()
 
 		self.datadir = datadir
-
+		self.dirname = dirname
+		
 		# Find out proper way to find glade files
 		self.glade_file = self.datadir + '/' + 'guppy.glade'
 
-		self.pvr_error_window = PVRErrorWindow(self.glade_file)
+		self.pvr_error_window = PVRErrorWindow(self.glade_file, self.dirname)
 
 		actions = self.initUIManager()
 
@@ -67,7 +68,7 @@ class GuppyWindow:
 		# Load glade file
 		self.glade_xml = gtk.glade.XML(self.glade_file,
 		                               None,
-		                               dirname)
+		                               self.dirname)
 		
 		# Connect callback functions in glade file to functions
 		self.glade_xml.signal_autoconnect(self)
@@ -991,7 +992,7 @@ class GuppyWindow:
 
 			xml = gtk.glade.XML(self.glade_file,
 			                    'progress_box',
-			                    gettext.textdomain())			                    
+			                    self.dirname)			                    
 			xml.signal_autoconnect(self)		
 
 			progress_box = xml.get_widget('progress_box')
@@ -1157,10 +1158,10 @@ class PVRErrorWindow:
 	LIST_TYPES.insert(MSG_COL, gobject.TYPE_STRING)
 	LIST_TYPES.insert(OUTPUT_COL, gobject.TYPE_STRING)
 
-	def __init__(self, glade_file):
+	def __init__(self, glade_file, dirname):
 		glade_xml = gtk.glade.XML(glade_file,
 		                          'pvr_error_window',
-		                          gettext.textdomain())
+		                          dirname)
 		# Connect callback functions in glade file to functions
 		glade_xml.signal_autoconnect(self)
 
