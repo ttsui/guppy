@@ -395,28 +395,39 @@ class GuppyWindow:
 				return False
 		
 		retval = True
+		cancel = False
 		for name in files:
+			if cancel:
+				break
 			deleted = False
 			while not deleted:
 				try:
 					fs_model.delete(name)
 					deleted = True
 				except OSError:
-					SKIP, RETRY = range(2)
-					msg = '<b>' + _('Error while deleting.') + '</b>\n\n' + _('Cannot delete')
-					msg += ' "' + fs_model.getCWD() + '/' + name + '" '
-					msg += _('because you do not have permissions to change it or its parent folder.')
-					dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR)
-					dialog.set_markup(msg)
-					dialog.add_buttons( _('_Skip'), SKIP, _('_Retry'), RETRY)
+					dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+					                           message_format=_('Error while deleting.'))
+					dialog.format_secondary_text(_('Cannot delete "%s" because you do not have permissions to change it or its parent folder.') % (fs_model.getCWD() + '/' + name))
+
+					if len(files) > 1:
+						dialog.add_button( _('_Skip'), gtk.RESPONSE_REJECT)
+					dialog.add_button( gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
+					dialog.add_button(_('_Retry'), gtk.RESPONSE_ACCEPT)
+					dialog.set_default_response(gtk.RESPONSE_ACCEPT)
 					response = dialog.run()
 					dialog.destroy()
 		
 					# Skip this file and go to next file
-					if response == SKIP or response == gtk.RESPONSE_DELETE_EVENT:
+					if response == gtk.RESPONSE_REJECT:
 						retval = False
 						break
-				
+					
+					if response == gtk.RESPONSE_CANCEL or \
+					   response == gtk.RESPONSE_DELETE_EVENT:
+						retval = False
+						cancel = True
+						break
+
 					# Try to delete again
 					continue
 				except PuppyBusyError:
@@ -528,10 +539,10 @@ class GuppyWindow:
 		try:
 			name = fs_model.mkdir()
 		except OSError:
-			msg = '<b>' + _('Error while creating folder.') + '</b>\n\n'
-			msg += _('Cannot create folder because you do not have permission to write in its parent folder.')
-			dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR, buttons=gtk.BUTTONS_CLOSE)
-			dialog.set_markup(msg)
+			dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+			                           buttons=gtk.BUTTONS_CLOSE,
+			                           message_format=_('Error while creating folder.'))
+			dialog.format_secondary_text(_('Cannot create folder because you do not have permission to write in its parent folder.'))
 			response = dialog.run()
 			dialog.destroy()
 
@@ -574,40 +585,36 @@ class GuppyWindow:
 				fs_model.rename(old_name, new_name)
 				renamed = True
 			except OSError, error:
-				print 'error = ', error
-
 				# Handle Permission Denied error				
 				if str(error).find('Errno 13') != -1:
-					SKIP, RETRY = range(2)
-					msg = '<b>' + _('Error while renaming.') + '</b>\n\n' + _('Cannot rename')
-					msg += ' "' + fs_model.getCWD() + '/' + old_name + '" '
-					msg += _('because you do not have permissions to change it or its parent folder.')
-					dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR)
-					dialog.set_markup(msg)
-					dialog.add_buttons( _('_Skip'), SKIP, _('_Retry'), RETRY)
+					dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+					                           message_format=_('Error while renaming.'))
+					dialog.format_secondary_text(_('Cannot rename "%s" because you do not have permissions to change it or its parent folder.') % (fs_model.getCWD() + '/' + old_name))
+					dialog.add_buttons(_('_Skip'), gtk.RESPONSE_REJECT,
+					                   _('_Retry'), gtk.RESPONSE_ACCEPT)
 					response = dialog.run()
 					dialog.destroy()
 		
 					# Skip this file and go to next file
-					if response == SKIP or response == gtk.RESPONSE_DELETE_EVENT:
+					if response == gtk.RESPONSE_REJECT or \
+					   response == gtk.RESPONSE_DELETE_EVENT:
 						retval = False
 						break
 				
 					# Try to rename again
 					continue
 				elif str(error).find('Errno 17') != -1:
-					CANCEL, REPLACE = range(2)
-					msg = '<b>' + _('The item could not be renamed') + '.</b>\n\n'
-					msg += _('The name') + ' "' + new_name + '" '
-					msg += _('is already used in this folder.')
-					dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR)
-					dialog.set_markup(msg)
-					dialog.add_buttons( _('Cancel'), CANCEL,_('_Replace'), REPLACE)
+					dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+					                           message_format=_('The item could not be renamed.'))
+					dialog.format_secondary_text(_('The name "%s" is already used in this folder.') % new_name)
+					dialog.add_buttons(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
+					                   _('_Replace'), gtk.RESPONSE_APPLY)
 					response = dialog.run()
 					dialog.destroy()
 		
 					# Skip this file and go to next path in files
-					if response == CANCEL or response == gtk.RESPONSE_DELETE_EVENT:
+					if response == gtk.RESPONSE_CANCEL or \
+					   response == gtk.RESPONSE_DELETE_EVENT:
 						break
 		
 					deleted = self.deleteFiles([new_name], fs_model, False)
@@ -1034,7 +1041,8 @@ class GuppyWindow:
 				msg2 = _('If you replace an existing file, its contents will be overwritten.')
 				dialog = gtk.MessageDialog(type=gtk.MESSAGE_QUESTION,
 				                           message_format=msg)
-				                           
+				dialog.format_secondary_text(msg2)
+				
 				if len(existing_files) > 1:
 					dialog.add_button(_('Replace _All'), REPLACE_ALL)
 				dialog.add_buttons( _('_Skip'), SKIP, _('_Replace'), REPLACE)
