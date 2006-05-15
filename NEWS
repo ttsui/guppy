@@ -1,3 +1,12 @@
+guppy-0.0.93: 
+	- Fix exception when Path bar buttons are not enabled
+	- Fix exception when os.listdir() fails.
+	- Fix exception when entering an invalid path to the PVR
+	- Catch exception if we fail to parse the time format of PVR files
+	- Simplify dialog messages by using
+	  gtk.MessageDialog::format_secondary_text()
+	- Fix missing German translation (Jürgen Bausa)
+
 guppy-0.0.92: 17 April 2006
 	- Add application icon
 	- Fix freeze when scrolling during a transfer
