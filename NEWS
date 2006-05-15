@@ -1,4 +1,4 @@
-guppy-0.0.93: 
+guppy-0.0.93: 15 May 2006
 	- Fix exception when Path bar buttons are not enabled
 	- Fix exception when os.listdir() fails.
 	- Fix exception when entering an invalid path to the PVR
