@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?> 
+
+<deviceinfo version="0.2">
+  <device>
+    <match key="info.bus" string="usb">
+      <match key="usb.vendor_id" int="0x11db">
+        <match key="usb.product_id" int="0x1000">
+          <append key="info.callouts.add" type="strlist">hal-system-toppy</append>
+        </match>
+      </match>
+    </match>
+  </device>
+</deviceinfo>

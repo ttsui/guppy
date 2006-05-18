@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Copyright (C) 2006 Tony Tsui <tsui.tony@gmail.com>
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2.
+
+if [ "$UDI" == "" ] ; then
+        echo "Missing or empty environment variable(s)." >&2
+        echo "This script should be started by hald." >&2
+        exit 1
+fi
+
+UDI=/org/freedesktop/Hal/devices/usb_device_0_0_0000_00_1d_7_if0
+
+PARENT_UDI=`hal-get-property --udi $UDI --key info.parent`
+CHILDREN_UDI=`hal-find-by-property --key info.parent --string $PARENT_UDI`
+
+for CHILD_UDI in $CHILDREN_UDI; do
+	INFO_CATEGORY=`hal-get-property --udi $CHILD_UDI --key info.category`
+
+	if [ "$INFO_CATEGORY" == "" ] || [ "$INFO_CATEGORY" != "usbraw" ]; then
+
+		continue
+	fi
+
+	DEVICE_FILE=`hal-get-property --udi $CHILD_UDI --key usbraw.device`	
+	break
+done
+
+if [ "$DEVICE_FILE" == "" ]; then
+	echo "Error: Couldn't find usbraw device"
+	exit 1
+fi
+
+PROC_FILE=/proc${DEVICE_FILE##/dev}
+
+echo DEVICE_FILE = $DEVICE_FILE
+echo PROC_FILE = $PROC_FILE
+
+echo chmod 666 $PROC_FILE
+
+exit 0
