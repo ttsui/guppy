@@ -11,7 +11,8 @@ if [ "$UDI" == "" ] ; then
         exit 1
 fi
 
-UDI=/org/freedesktop/Hal/devices/usb_device_0_0_0000_00_1d_7_if0
+# Testing code
+#UDI=/org/freedesktop/Hal/devices/usb_device_0_0_0000_00_1d_7_if0
 
 PARENT_UDI=`hal-get-property --udi $UDI --key info.parent`
 CHILDREN_UDI=`hal-find-by-property --key info.parent --string $PARENT_UDI`
