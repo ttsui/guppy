@@ -69,6 +69,8 @@ data_files = [
 	('share/guppy', listfiles('guppy', '*.glade')),
 	('share/guppy', listfiles('guppy', '*.xml')),
 	('share/guppy', listfiles('guppy', '*.png')),
+	('share/hal/fdi/policy/20thirdparty', listfiles('hal', 'toppy.fdi')),
+	('share/hal/scripts', listfiles('hal', 'hal-system-toppy')),
 	]
 
 scripts = ['guppy/guppy']
