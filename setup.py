@@ -65,12 +65,14 @@ docs_dir = os.path.join(prefix, 'share', 'doc', 'guppy')
 		return install_lib.install(self) + [filename]
 
 data_files = [
-	('share/doc/guppy', ('AUTHORS', 'COPYING', 'README', 'NEWS', 'CONTRIBUTORS')),
+	('share/doc/guppy', ['AUTHORS', 'COPYING', 'README', 'NEWS', 'CONTRIBUTORS']),
 	('share/guppy', listfiles('guppy', '*.glade')),
 	('share/guppy', listfiles('guppy', '*.xml')),
 	('share/guppy', listfiles('guppy', '*.png')),
-	('share/hal/fdi/policy/20thirdparty', listfiles('hal', 'toppy.fdi')),
-	('share/hal/scripts', listfiles('hal', 'hal-system-toppy')),
+	('share/hal/fdi/policy/20thirdparty', ['hal/toppy.fdi']),
+	('share/hal/scripts', ['hal/hal-system-toppy']),
+	('share/applications', ['guppy.desktop']),
+	('share/pixmaps', ['guppy/guppy.png']),
 	]
 
 scripts = ['guppy/guppy']
