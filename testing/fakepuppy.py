@@ -26,8 +26,10 @@ import fcntl
 
 FAIL_START    = False
 FAIL_TRANSFER = False
+FAIL_TRANSFER_NO_SRC = True
 FAIL_LIST     = False
 FAIL_SIZE     = True
+FAIL_NO_PVR   = False
 
 DOWNLOAD_RATE = 50
 
@@ -71,8 +73,12 @@ for opt, optarg in opts:
 		if optarg == 'size':
 			size = True
 
+check_fail(FAIL_NO_PVR, 'ERROR: Can not autodetect a Topfield TF5000PVRt')
+
 if transfer:
 	check_fail(FAIL_TRANSFER, 'FAIL_TRANSFER')
+
+	check_fail(FAIL_TRANSFER_NO_SRC, 'ERROR: Device reports Invalid command')
 
 	if len(args) != 2:
 		print 'ERROR: Insufficent arguments for transfer command'
@@ -81,7 +87,11 @@ if transfer:
 	src = args[0]
 	dst = args[1]
 
-	file = open(dst, 'w')
+	try:
+		file = open(dst, 'w')
+	except IOError, error:
+		print error
+		sys.exit(13)
 
 	inc = DOWNLOAD_RATE
 	percent = 0.0
@@ -112,9 +122,7 @@ elif listdir:
 	if SLOW_LISTDIR:
 		time.sleep(0.5)
 elif size:
-	check_fail(FAIL_SIZE, '''FAIL_SIZE. (12:09:25) tonyt: btw are you happy with
-	the case, i.e. the supposed noise reduction?
-	(12:09:41) interalia: at this stage I havent decided''')
+	check_fail(FAIL_SIZE, '''FAIL_SIZE''')
 	print 'Total %10u kiB %7u MiB %4u GiB' % (0, 0, 120)
 	print 'Free  %10u kiB %7u MiB %4u GiB' % (0, 500, 0)
 elif cancel:

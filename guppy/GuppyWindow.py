@@ -1348,7 +1348,8 @@ class TransferThread(threading.Thread):
 							self.guppy.puppy.getFile(src_file, dst_file)
 						else:
 							self.guppy.puppy.putFile(src_file, dst_file)
-					except PuppyError:
+					except PuppyError, error:
+						transfer_error = error
 						pass
 
 					continue

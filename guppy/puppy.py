@@ -115,7 +115,8 @@ class Puppy:
 
 		status = self.getStatus(wait=False)
 		if status != 0 and status != -1:
-			self._handleErrorOuput(self.progress_output)
+			output = self.progress_output.readlines()
+			self._handleErrorOuput(output)
 			
 		return
 
@@ -150,7 +151,7 @@ class Puppy:
 			# Reap child process
 			exit_status = self.getStatus()
 			if exit_status != 0 and exit_status != 15:
-				self._handleErrorOuput(line)
+				self._handleErrorOuput([line])
 			
 			return None, None, None
 
@@ -253,7 +254,8 @@ class Puppy:
 		
 		status = self.getStatus(wait=False)
 		if status != 0 and status != -1:
-			self._handleErrorOuput(self.progress_output)
+			output = self.progress_output.readlines()
+			self._handleErrorOuput(output)
 			
 		return
 
@@ -330,7 +332,7 @@ class Puppy:
 			
 		return self.popen_obj.fromchild
 
-	def _handleErrorOuput(self, output):
+	def _handleErrorOuput(self, output_lines):
 		"""Parse puppy error message and raise appropriate exception.
 		
 		"""
@@ -340,11 +342,13 @@ class Puppy:
 		finally:
 			del caller
 
-		errmsg = ' '.join(output)
+		errmsg = ' '.join(output_lines)
 		msg = func_name + '(): ' + errmsg
 		
-		if errmsg == 'ERROR: Can not autodetect a Topfield TF5000PVRt\n':
+		if errmsg.startswith('ERROR: Can not autodetect a Topfield TF5000PVRt'):
 			raise PuppyNoPVRError(msg)
+		elif errmsg.startswith('ERROR: Device reports Invalid command'):
+			raise PuppyError(_('The file you are trying to transfer is no longer available.'))
 		else:
 			raise PuppyError(msg)
 		

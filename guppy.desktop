@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Guppy
+Comment=Download and Upload files to your Toppy PVR
+Exec=guppy
+Icon=guppy.png
+Terminal=false
+Type=Application
+Encoding=UTF-8
+#Categories=Application;AudioVideo;AudioVideoEditing;GTK;
+Categories=Application;AudioVideo;GTK;
+X-Desktop-File-Install-Version=0.3
+#MimeType=audio/x-mp3;application/ogg;
