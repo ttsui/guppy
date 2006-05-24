@@ -11,9 +11,10 @@ dist:
 	# Make Fedora RPM
 	ln -sf setup.cfg-fedora setup.cfg
 	python setup.py bdist_rpm
-	# Make Fedora RPM
-	ln -sf setup.cfg-suse setup.cfg
-	python setup.py bdist_rpm
-	rm -f setup.cfg
+	# Make SUSE RPM
+# Broken at the moment :(
+#	ln -sf setup.cfg-suse setup.cfg
+#	python setup.py bdist_rpm
+#	rm -f setup.cfg
 
 .PHONY: install clean dist
