@@ -1803,6 +1803,7 @@ class PathBar(gtk.Container):
 	def updatePathBtns(self, path):
 		"""Update toggle state of path bar buttons if we change to a dir on the current path.
 		"""
+		path = path.replace('\\', '/')
 		if self.path == None or not self.path.startswith(path):
 			return False
 
