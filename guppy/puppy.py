@@ -347,7 +347,8 @@ class Puppy:
 		
 		if errmsg.startswith('ERROR: Can not autodetect a Topfield TF5000PVRt'):
 			raise PuppyNoPVRError(msg)
-		elif errmsg.startswith('ERROR: Device reports Invalid command'):
+		elif errmsg.startswith('ERROR: Device reports Invalid command') or \
+		     errmsg.startswith('ERROR: Can not open source file: No such file or directory'):
 			raise PuppyError(_('The file you are trying to transfer is no longer available.'))
 		else:
 			raise PuppyError(msg)
