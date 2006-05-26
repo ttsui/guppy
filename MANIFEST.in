@@ -4,4 +4,4 @@ recursive-include doc *.dia *.png *.txt
 recursive-include guppy *.py *.glade *.xml *.png *.svg
 recursive-include po *.po
 recursive-include testing *.py *.txt puppy
-recursive-include hal *.fdi *.png hal-system-toppy
+recursive-include hal *.fdi *.png hal-system-toppy debian*

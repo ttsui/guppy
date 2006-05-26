@@ -1,4 +1,11 @@
-guppy-0.0.93: 
+guppy-1.0.0: 26 May 2006
+	- Add HAL fdi and script to change permission of /proc/bus/usb/...
+	  file so Guppy can be used by non-root users on Fedora Core.
+	- Add desktop file.
+	- Handle error when source file is no longer available.
+	- Fix PVR path bar buttons.
+
+guppy-0.0.93: 15 May 2006
 	- Fix exception when Path bar buttons are not enabled
 	- Fix exception when os.listdir() fails.
 	- Fix exception when entering an invalid path to the PVR
