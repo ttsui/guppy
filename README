@@ -15,24 +15,24 @@ Guppy depends on the following software. Please ensure they have been
 correctly installed on your system.
 
 Puppy      - http://puppy.sourceforge.net
-Python 2.4 - http://python.org
+Python 2.3 - http://python.org
 PyGtk  2.6 - http://pygtk.org
 
 
 Installing Guppy
 ================
 1. You can install guppy with the following command
-	$ tar jxf guppy-0.0.91.tar.bz2
+	$ tar jxf guppy-1.0.0.tar.bz2
 	$ su -
 	$ make install
 	 
-Set the environment variable DESTDIR to install into a location other than /usr/local E.g.
+Set the variable DESTDIR to install into a location other than /usr/local E.g.
 	$ make DESTDIR=/usr/ install
 
 
 Note: You can also running Guppy without installing it.
 1. Go into the guppy directory and run Guppy.
-	$ cd guppy-0.0.91/guppy
+	$ cd guppy-1.0.0/guppy
 	$ ./guppy
 
 
@@ -42,7 +42,7 @@ Running Guppy
 	$ which puppy
 
 2. You will most likely need root access to run Guppy because you need
-permission to access the USB device at /proc/bus/usb/001/003.
+permission to access the USB device at /proc/bus/usb/<bus number>/<device number> e.g. /proc/bus/usb/001/003.
 	$ su -
 
 3. Start Guppy
