@@ -35,7 +35,7 @@ dirname = DIRNAME or os.path.split(sys.argv[0])[1]
 appname = APPNAME or dirname.capitalize()
 
 version_string = sys.version.split(' ')[0]
-majmin = tuple(map(int, version_string.split('.')))
+majmin = tuple(map(int, version_string.split('.')[0:2]))
 if majmin < REQUIRED_VERSION:
 	raise SystemExit("ERROR: Python %s or higher is required to run %s, "
 	                 "%s found" % ('.'.join(map(str, REQUIRED_VERSION)),
