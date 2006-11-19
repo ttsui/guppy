@@ -5,3 +5,6 @@ recursive-include guppy *.py *.glade *.xml *.png *.svg
 recursive-include po *.po
 recursive-include testing *.py *.txt puppy
 recursive-include hal *.fdi *.png hal-toppy-set-procperm debian*
+prune hal/.arch-ids
+recursive-include pkg *
+prune pkg/.arch-ids
