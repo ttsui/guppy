@@ -33,6 +33,11 @@ deb:
 	# Install into build area
 	python setup.py install --prefix=$(DEB_BUILD_DIR)/usr
 
+	# Move HAL script to directory appropriate for Debian systems
+	mkdir -p $(DEB_BUILD_DIR)/usr/share/hal/scripts/
+	mv $(DEB_BUILD_DIR)/usr/libexec/hal-* $(DEB_BUILD_DIR)/usr/share/hal/scripts/
+	rm -rf $(DEB_BUILD_DIR)/usr/libexec
+
 	# Build the deb
 	dpkg --build $(DEB_BUILD_DIR) $(DIST_DIR)/guppy_$(VERSION)_all.deb
 
