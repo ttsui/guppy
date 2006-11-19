@@ -15,8 +15,8 @@ dist:
 
 rpm:
 	# Make Fedora RPM
-	ln -sf setup.cfg-fedora setup.cfg
-	python setup.py bdist_rpm --install-script fedora_bdist_rpm-install.spec
+	ln -sf pkg/setup.cfg-fedora setup.cfg
+	python setup.py bdist_rpm --install-script pkg/fedora_bdist_rpm-install.spec
 	# Make SUSE RPM
 # Broken at the moment :(
 #	ln -sf setup.cfg-suse setup.cfg
