@@ -7,6 +7,8 @@ Name: %{name}
 Version: %{version}
 Release: %{release}
 Source0: %{name}_%{version}_src.tar.bz2
+Patch1: gcc_fixes.diff
+Patch2: use_kernel_2_4_headers.diff
 License: GNU Public License
 Group: Applications/Multimedia
 BuildRoot: %{_tmppath}/%{name}_%{version}-%{release}-buildroot
@@ -20,6 +22,9 @@ Topfield PVR.
 
 %prep
 %setup -n puppy_1.11
+
+%patch1 -p1
+%patch2 -p1
 
 %build
 make
