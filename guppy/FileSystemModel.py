@@ -58,6 +58,7 @@ class FileSystemModel(gtk.ListStore):
 	# Set in FileSystemModel::__load_icons()
 	file_icon = None
 	dir_icon = None
+	dir_unreadable_icon = None
 	video, audio, tap, tap_ini = ('.rec', '.mp3', '.tap', '.ini')
 	icon_dict = { video : None,
 	              audio : None,
@@ -107,6 +108,7 @@ class FileSystemModel(gtk.ListStore):
 
 		# List of icons and their icon theme name
 		icons = { 'dir_icon' : 'folder',
+		          'dir_unreadable_icon' : 'emblem-unreadable',
 		          'video_icon' : 'video-x-generic',
 		          'audio_icon' : 'audio-x-generic',
 		          'tap_icon' : 'application-x-executable',
@@ -122,6 +124,7 @@ class FileSystemModel(gtk.ListStore):
 				pass
 
 		FileSystemModel.dir_icon = icons['dir_icon']
+		FileSystemModel.dir_unreadable_icon = icons['dir_unreadable_icon']
 		FileSystemModel.icon_dict[FileSystemModel.video] = icons['video_icon']
 		FileSystemModel.icon_dict[FileSystemModel.audio] = icons['audio_icon']
 		FileSystemModel.icon_dict[FileSystemModel.tap] = icons['tap_icon']
@@ -132,6 +135,9 @@ class FileSystemModel(gtk.ListStore):
 			FileSystemModel.dir_icon = img.render_icon(gtk.STOCK_DIRECTORY,
 		                                               gtk.ICON_SIZE_LARGE_TOOLBAR)
 		
+		if FileSystemModel.dir_unreadable_icon == None:
+			FileSystemModel.dir_unreadable_icon = gtk.gdk.pixbuf_new_from_file(datadir + '/' + 'unreadable.png')
+			
 		if FileSystemModel.icon_dict[FileSystemModel.video] == None:	
 			FileSystemModel.icon_dict[FileSystemModel.video] = gtk.gdk.pixbuf_new_from_file(datadir + '/' + 'video.png')
 
@@ -496,7 +502,10 @@ class PVRFileSystemModel(FileSystemModel):
 			self.append(file_info)
 			
 		for dir, dir_info in dir_node.getDirectories():
-			dir_info.insert(FileSystemModel.ICON_COL, FileSystemModel.dir_icon)
+			if dir.readable == False:
+				dir_info.insert(FileSystemModel.ICON_COL, FileSystemModel.dir_unreadable_icon)
+			else:
+				dir_info.insert(FileSystemModel.ICON_COL, FileSystemModel.dir_icon)
 			
 			dir_info[FileSystemModel.SIZE_COL] = humanReadableSize(int(dir_info[FileSystemModel.SIZE_COL]))
 			
@@ -593,7 +602,11 @@ class PVRFileSystemModel(FileSystemModel):
 		Return: DirectoryNode object representing the directory
 		"""
 		dir_node = DirectoryNode(dir.split('\\')[-1])
-		pvr_files = self.puppy.listDir(dir)
+		try:
+			pvr_files = self.puppy.listDir(dir)
+		except PuppyError:
+			dir_node.readable = False
+			return dir_node
 		
 		for file in pvr_files:
 			if file[0] == 'd':
@@ -714,6 +727,7 @@ class DirectoryNode:
 		self.name = name
 		self.sub_directories = {}
 		self.files = []
+		self.readable = True
 		
 	def addDirectory(self, dir, info):
 		if DEBUG:
