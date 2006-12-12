@@ -486,6 +486,9 @@ class PVRFileSystemModel(FileSystemModel):
 		if dir_node == None:
 			return
 		
+		if not dir_node.readable:
+			raise PVRFileSystemError('%s is unreadable.' % (dir))
+			
 		self.current_dir = dir
 		
 		# Clear model
@@ -773,3 +776,9 @@ class DirectoryNode:
 			
 		for file in self.files:
 			print file
+
+class PVRFileSystemError(Exception):
+	def __init__(self, value):
+		self.value = value
+	def __str__(self):
+		return self.value

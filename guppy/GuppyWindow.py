@@ -262,6 +262,11 @@ class GuppyWindow:
 			self.showErrorDialog(_('The folder contents could not be displayed.'),
 								 _('You do not have the permissions necessary to view the contents of "%s".') % dir)
 			return False
+		except PVRFileSystemError:
+			self.showErrorDialog(_('The folder contents could not be displayed.'),
+								 _('Unable to read the contents of "%s". Use your PVR to move the files from "%s" into another folder and try Guppy again.') % (dir,dir))
+			return False
+			
 		
 	def createFileTrees(self):	
 		self.pvr_treeview = self.glade_xml.get_widget('pvr_treeview')	
