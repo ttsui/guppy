@@ -26,9 +26,10 @@ import fcntl
 
 FAIL_START    = False
 FAIL_TRANSFER = False
-FAIL_TRANSFER_NO_SRC = True
+FAIL_TRANSFER_NO_SRC = False
 FAIL_LIST     = False
-FAIL_SIZE     = True
+FAIL_LIST_MIDWAY = True
+FAIL_SIZE     = False
 FAIL_NO_PVR   = False
 
 DOWNLOAD_RATE = 50
@@ -114,6 +115,8 @@ elif listdir:
 			dir = '-'
 		if args[0] != '\\':
 			dir += args[0].replace('\\', '-')
+	if dir.find('MOVIES') != -1:
+		check_fail(FAIL_LIST_MIDWAY, 'ERROR: Device reports Invalid command')
 	list_file = 'puppy-dir' + dir + '.txt'
 	listing = open(DATA_DIR + list_file)
 	for line in listing:
