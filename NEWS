@@ -3,6 +3,7 @@ guppy-1.0.1: 26 May 2006
 	- Update HAL scripts for Fedora Core 6.
 	- Handle Python version number with non-numeric characters, like in
 	  Ubuntu Edgy.
+	- Handle when Puppy fails to read a directory.
 
 guppy-1.0.0: 26 May 2006
 	- Add HAL fdi and script to change permission of /proc/bus/usb/...
