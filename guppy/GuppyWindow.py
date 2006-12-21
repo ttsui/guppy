@@ -48,17 +48,20 @@ class GuppyWindow:
 			self.no_path_bar_support = True
 		else:
 			self.no_path_bar_support = False
-	
-		# Initialise Gtk thread support
-		gtk.gdk.threads_init()
 
 		self.datadir = datadir
 		self.dirname = dirname
+		
+		# Exclude caching contents of MP3 by default
+		self.cache_exclusions = [ '\\MP3' ]
 		
 		# Find out proper way to find glade files
 		self.glade_file = self.datadir + '/' + 'guppy.glade'
 
 		self.pvr_error_window = PVRErrorWindow(self.glade_file, self.dirname)
+
+		# Initialise Gtk thread support
+		gtk.gdk.threads_init()
 
 		actions = self.initUIManager()
 
@@ -255,6 +258,23 @@ class GuppyWindow:
 		
 	def changeDir(self, fs_model, dir=None):
 		try:
+			if dir and fs_model.getCWD() + dir in self.cache_exclusions:
+				msg = _('Cannot enter the folder ' + dir)
+				msg2 = _('The current transfer needs to be restarted if you enter the ' + dir + ' folder.')
+				
+				dialog = gtk.MessageDialog(type=gtk.MESSAGE_WARNING,
+				                           buttons=gtk.BUTTONS_OK_CANCEL,
+				                           message_format=msg)
+				dialog.format_secondary_text(msg2)
+				
+				response = dialog.run()
+				dialog.destroy()
+		
+				if response == gtk.RESPONSE_CANCEL or response == gtk.RESPONSE_DELETE_EVENT:
+					return False
+				
+				fs_model.updateDirectory(dir)
+				
 			return fs_model.changeDir(dir)
 		except OSError:
 			if dir == None:
@@ -1143,7 +1163,7 @@ class GuppyWindow:
 					if cur_dir_only:
 						model.updateDirectory(model.getCWD())
 					else:
-						model.updateCache()
+						model.updateCache(exclude=self.cache_exclusions)
 				except PuppyNoPVRError:
 					raise
 				except PuppyError, error:

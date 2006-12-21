@@ -597,14 +597,22 @@ class PVRFileSystemModel(FileSystemModel):
 		
 		self.puppy.rename(self.abspath(old), self.abspath(new))
 		
-	def scanDirectory(self, dir):
+	def scanDirectory(self, dir, exclude=[]):
 		"""Recursively scan a directory for all subdirectories and files.
 		
 		This function recursivley scans the given directory for all subdirectories
 		and files. Each subdirectory and file is stored in the DirectoryNode object.
+		
+		exclude    List of directories to exclude from scan.
+				
 		Return: DirectoryNode object representing the directory
 		"""
+		
 		dir_node = DirectoryNode(dir.split('\\')[-1])
+		
+		if dir in exclude:
+			return dir_node
+		
 		try:
 			pvr_files = self.puppy.listDir(dir)
 		except PuppyError:
@@ -614,17 +622,19 @@ class PVRFileSystemModel(FileSystemModel):
 		for file in pvr_files:
 			if file[0] == 'd':
 				if file[1] != '..':
-					dir_node.addDirectory(self.scanDirectory(dir + '\\' + file[1]), file)
+					dir_node.addDirectory(self.scanDirectory(dir + '\\' + file[1], exclude), file)
 			else:
 				dir_node.addFile(file[1], file)
 
 		return dir_node
 	
-	def updateCache(self):
+	def updateCache(self, exclude=[]):
 		"""Update the PVR file system cache.
 		
 		This function scans the entire PVR file system and creates a tree
 		representing all the files and directories.
+		
+		exclude    List of directories to exclude from cache.
 		"""
 		if DEBUG:
 			print 'Start updateCache()'
@@ -633,11 +643,10 @@ class PVRFileSystemModel(FileSystemModel):
 		self.dir_tree_lock.acquire()
 
 		new_dir_tree = None
-
 		# Attempt to update cache twice in case puppy was busy the first time
 		for i in xrange(2):
 			try:
-				new_dir_tree = self.scanDirectory('')
+				new_dir_tree = self.scanDirectory('', exclude)
 			except PuppyBusyError:
 				# Sleep for 1 second before trying again
 				time.sleep(1)
@@ -670,9 +679,6 @@ class PVRFileSystemModel(FileSystemModel):
 		# Strip trailing slash
 		dir = dir.rstrip(self.slash)
 
-		debugLocking('locking')
-		self.dir_tree_lock.acquire()
-
 		# Call scanDirectory() directly if dir is root dir, i.e. '\'
 		if len(dir) == 0:
 			self.dir_tree = self.scanDirectory('')
@@ -681,6 +687,8 @@ class PVRFileSystemModel(FileSystemModel):
 			if DEBUG:
 				print 'End updateDirectory(\\)'
 			return
+		debugLocking('locking')
+		self.dir_tree_lock.acquire()
 
 		# Get components of directory path as a list
 		path = dir.split('\\')
@@ -697,7 +705,7 @@ class PVRFileSystemModel(FileSystemModel):
 		cur_node, node_info = parent_node.getDirectory(path[-1])
 		
 		new_node = None
-		# Attempt to update cache twice in case puppy was busy the first time
+		# Attempt to update directory twice in case puppy was busy the first time
 		for i in xrange(2):
 			try:
 				new_node = self.scanDirectory(dir)
@@ -711,11 +719,11 @@ class PVRFileSystemModel(FileSystemModel):
 				raise
 			break
 
-		# Failed to update cache. Use existing node.
+		# Failed to update directory node. Use existing node.
 		if new_node == None:
 			new_node = cur_node
 
-		# Replace wit new node
+		# Replace with new node
 		parent_node.addDirectory(new_node, node_info)
 		
 		debugLocking('unlocking')
