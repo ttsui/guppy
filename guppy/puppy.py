@@ -128,7 +128,7 @@ class Puppy:
 			# Raise exception if puppy did not exit successfully or because of
 			# SIGTERM.
 			if exit_status != 0 and exit_status != 15:
-				raise PuppyError("Transfer failed")
+				raise PuppyError("puppy did not exit successfully or a SIGTERM was received.")
 
 			# Reap child process
 			if exit_status == 0:
