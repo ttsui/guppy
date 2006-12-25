@@ -34,6 +34,7 @@ from puppy import *
 from FileSystemModel import *
 from util import *
 from about import *
+import time
 
 class GuppyWindow:
 	SCREEN_INFO_UPDATE_INTERVAL = 10 * 60 * 1000 # 10 mins (unit in milliseconds)
@@ -256,24 +257,27 @@ class GuppyWindow:
 		handler = getattr(self, func_name)
 		return handler(str1, str2, int1, int2)
 		
-	def changeDir(self, fs_model, dir=None):
+	def changeDir(self, fs_model, dir):
 		try:
-			if dir and fs_model.getCWD() + dir in self.cache_exclusions:
-				msg = _('Cannot enter the folder ' + dir)
-				msg2 = _('The current transfer needs to be restarted if you enter the ' + dir + ' folder.')
-				
-				dialog = gtk.MessageDialog(type=gtk.MESSAGE_WARNING,
-				                           buttons=gtk.BUTTONS_OK_CANCEL,
-				                           message_format=msg)
-				dialog.format_secondary_text(msg2)
-				
-				response = dialog.run()
-				dialog.destroy()
-		
-				if response == gtk.RESPONSE_CANCEL or response == gtk.RESPONSE_DELETE_EVENT:
-					return False
-				
-				fs_model.updateDirectory(dir)
+			# Handle directories which have been excluded from PVR file cache.
+			if isinstance(fs_model, PVRFileSystemModel):
+				dir_abspath = fs_model.abspath(dir)
+				if dir_abspath in self.cache_exclusions:
+					try:
+						fs_model.updateDirectory(dir_abspath, self.cache_exclusions)
+					except PuppyBusyError:
+						msg = _('Cannot enter the folder ' + dir)
+						msg2 = _('It is not possible to enter the folder ' + dir + ' during a file transfer.')
+						
+						dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
+						                           buttons=gtk.BUTTONS_CLOSE,
+						                           message_format=msg)
+						dialog.format_secondary_text(msg2)
+						
+						dialog.run()
+						dialog.destroy()
+						
+						return False
 				
 			return fs_model.changeDir(dir)
 		except OSError:
@@ -1161,17 +1165,15 @@ class GuppyWindow:
 			if isinstance(model, PVRFileSystemModel):
 				try:
 					if cur_dir_only:
-						model.updateDirectory(model.getCWD())
+						model.updateDirectory(model.getCWD(), self.cache_exclusions)
 					else:
-						model.updateCache(exclude=self.cache_exclusions)
+						if model.updateCache(exclude=self.cache_exclusions) == False:
+							self.pvr_error_btn.show()
+							self.pvr_error_window.addError(_('Failed to get list of files on PVR.'), 'PVRFileSystemModel::updateCache() failed.')
 				except PuppyNoPVRError:
 					raise
-				except PuppyError, error:
-					self.pvr_error_btn.show()
-					self.pvr_error_window.addError(_('Failed to get list of files'), error)
-					pass
 
-			self.changeDir(model)
+			self.changeDir(model, model.getCWD())
 			
 			# Reselect rows
 			for path in selected_rows[1]:
@@ -1334,17 +1336,24 @@ class TransferThread(threading.Thread):
 
 			progress_bar = xml.get_widget('transfer_progressbar')
 			
-			# Enable turbo mode if required
-			if self.guppy.turbo == True:
-				self.guppy.puppy.setTurbo(True)
-				
-			try:
-				if direction == 'download':
-					self.guppy.puppy.getFile(src_file, dst_file)
-				else:
-					self.guppy.puppy.putFile(src_file, dst_file)
-			except PuppyError:
-				pass
+			# Keep trying puppy operation until we succeed or there is an error.
+			while True:
+				try:
+					# Enable turbo mode if required
+					if self.guppy.turbo == True:
+						self.guppy.puppy.setTurbo(True)
+					
+					if direction == 'download':
+						self.guppy.puppy.getFile(src_file, dst_file)
+					else:
+						self.guppy.puppy.putFile(src_file, dst_file)
+					
+					break
+				except PuppyBusyError:
+					time.sleep(5)
+					continue
+				except PuppyError:
+					break			
 
 			transfer_successful = True
 			transfer_attempt = 1

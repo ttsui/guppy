@@ -187,6 +187,9 @@ class FileSystemModel(gtk.ListStore):
 		FileSystemModel.__connect_theme_change_callback(self.changeDir)
 
 	def abspath(self, file):
+		if file[0] == self.slash:
+			return file
+		
 		if self.current_dir[-1] != self.slash and file[0] != self.slash:
 			return self.current_dir + self.slash + file
 		else:
@@ -342,8 +345,7 @@ class PCFileSystemModel(FileSystemModel):
 	def changeDir(self, dir=None):
 		if dir:
 			# Append CWD if dir is not an absolute path
-			if dir[0] != self.slash:
-				dir = self.abspath(dir)
+			dir = self.abspath(dir)
 		else:
 			dir = self.current_dir
 
@@ -400,8 +402,7 @@ class PCFileSystemModel(FileSystemModel):
 			os.remove(path)
 		
 	def exists(self, file):
-		if file[0] != self.slash:
-			file = self.abspath(file)
+		file = self.abspath(file)
 		
 		return os.access(file, os.F_OK)
 		
@@ -468,8 +469,7 @@ class PVRFileSystemModel(FileSystemModel):
 		"""
 		if dir:
 			# Append CWD if dir is not an absolute path
-			if dir[0] != self.slash:
-				dir = self.abspath(dir)
+			dir = self.abspath(dir)
 		else:
 			dir = self.current_dir
 
@@ -615,8 +615,15 @@ class PVRFileSystemModel(FileSystemModel):
 		
 		try:
 			pvr_files = self.puppy.listDir(dir)
+		except PuppyBusyError:
+			# Raise PuppyBusyError so we know when failed to scan a directory
+			# because puppy was busy, probably due to a transfer.
+			raise
 		except PuppyError:
+			# Mark directory as unreadable
 			dir_node.readable = False
+			
+			# Don't raise exception so we can continue scanning.
 			return dir_node
 		
 		for file in pvr_files:
@@ -635,32 +642,22 @@ class PVRFileSystemModel(FileSystemModel):
 		representing all the files and directories.
 		
 		exclude    List of directories to exclude from cache.
+		
+		Returns:   True if cache successfully updated.
+		           False if failed to update cache.
 		"""
 		if DEBUG:
 			print 'Start updateCache()'
-			
+
+		new_dir_tree = self.scanDirectory('', exclude)
+
+		# Couldn't even scan root directory on PVR. Return False.
+		if new_dir_tree.readable == False:
+			return False
+		
 		debugLocking('locking')
 		self.dir_tree_lock.acquire()
 
-		new_dir_tree = None
-		# Attempt to update cache twice in case puppy was busy the first time
-		for i in xrange(2):
-			try:
-				new_dir_tree = self.scanDirectory('', exclude)
-			except PuppyBusyError:
-				# Sleep for 1 second before trying again
-				time.sleep(1)
-				continue
-			except PuppyError:
-				debugLocking('unlocking')
-				self.dir_tree_lock.release()
-				raise
-			break
-
-		# Failed to update cache. Use existing cache.
-		if new_dir_tree == None:
-			new_dir_tree = self.dir_tree
-			
 		self.dir_tree = new_dir_tree
 
 		debugLocking('unlocking')
@@ -668,8 +665,10 @@ class PVRFileSystemModel(FileSystemModel):
 		
 		if DEBUG:
 			print 'End updateCache()'
+			
+		return True
 
-	def updateDirectory(self, dir):
+	def updateDirectory(self, dir, exclude=[]):
 		"""Update the directory node in the directory tree.
 		
 		"""
@@ -678,51 +677,37 @@ class PVRFileSystemModel(FileSystemModel):
 			
 		# Strip trailing slash
 		dir = dir.rstrip(self.slash)
-
-		# Call scanDirectory() directly if dir is root dir, i.e. '\'
+		
+		# Just call updateCache() if dir is root dir
 		if len(dir) == 0:
-			self.dir_tree = self.scanDirectory('')
-			debugLocking('unlocking')
-			self.dir_tree_lock.release()
-			if DEBUG:
-				print 'End updateDirectory(\\)'
-			return
-		debugLocking('locking')
-		self.dir_tree_lock.acquire()
+			return self.updateCache(exclude)
+
+		# Remove dir from exclusion list before scanning dir.
+		dir = self.abspath(dir)
+		new_exclude = copy.copy(exclude)
+		if dir in exclude:
+			new_exclude.remove(dir)
+		
+		new_node = self.scanDirectory(dir, new_exclude)
 
 		# Get components of directory path as a list
 		path = dir.split('\\')
+
+		debugLocking('locking')
+		self.dir_tree_lock.acquire()
 
 		# Find parent node		
 		parent_node = self.dir_tree
 		for name in path[:-1]:
 			if len(name) == 0:
 				continue
-			par_node, node_info = parent_node.getDirectory(name)
+			parent_node, node_info = parent_node.getDirectory(name)
 			if parent_node == None:
 				break
-				
+
+		# Get node_info for existing node
 		cur_node, node_info = parent_node.getDirectory(path[-1])
 		
-		new_node = None
-		# Attempt to update directory twice in case puppy was busy the first time
-		for i in xrange(2):
-			try:
-				new_node = self.scanDirectory(dir)
-			except PuppyBusyError:
-				# Sleep for 1 second before trying again
-				time.sleep(1)
-				continue
-			except PuppyError:
-				debugLocking('unlocking')
-				self.dir_tree_lock.release()
-				raise
-			break
-
-		# Failed to update directory node. Use existing node.
-		if new_node == None:
-			new_node = cur_node
-
 		# Replace with new node
 		parent_node.addDirectory(new_node, node_info)
 		
