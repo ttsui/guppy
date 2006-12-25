@@ -345,6 +345,9 @@ class Puppy:
 		errmsg = ' '.join(output_lines)
 		msg = func_name + '(): ' + errmsg
 		
+		# Print puppy error message to stderr
+		print >> sys.stderr, msg
+		
 		if errmsg.startswith('ERROR: Can not autodetect a Topfield TF5000PVRt'):
 			raise PuppyNoPVRError(msg)
 		elif errmsg.startswith('ERROR: Device reports Invalid command') or \
