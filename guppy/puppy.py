@@ -37,6 +37,10 @@ class Puppy:
 		self.cmd = 'puppy'
 		self.turbo = False
 		self.popen_obj = None
+
+		# FIXME: Toppy may not always be latin_1, i.e. ISO-8859-1. How do we
+		#        find out what encoding to use?		
+		self.encoding = 'latin_1'
 		
 	def cancelTransfer(self):
 		if self.getStatus(wait=False) == None:
@@ -212,9 +216,7 @@ class Puppy:
 			entry = line.split()
 
 			# Convert from Toppy's code page of ISO-8859-1 to UTF-8
-			# FIXME: Toppy may not always be ISO-8859-1. How do we find out
-			#        what encoding to use?
-			filename = unicode(space.join(entry[7:]), 'iso8859-1', 'replace')
+			filename = unicode(space.join(entry[7:]), self.encoding, 'replace')
 			filename = filename.encode('utf-8')
 
 			date = unicode("%s %s %s %s" % (entry[2], entry[3], entry[4],
@@ -316,6 +318,10 @@ class Puppy:
 		if DEBUG:
 			print 'cmd = ', cmd
 
+		for i in xrange(len(cmd)):
+			arg = unicode(cmd[i])
+			cmd[i] = arg.encode(self.encoding)
+		
 		if self.isActive():
 			raise PuppyBusyError('Can not get exclusive lock on ' + Puppy.LOCK_FILE)
 			
