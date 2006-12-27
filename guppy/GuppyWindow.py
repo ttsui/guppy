@@ -49,21 +49,25 @@ class GuppyWindow:
 		else:
 			self.no_path_bar_support = False
 
-		self.datadir = datadir
+		if os.path.exists(datadir + '/pixmaps/'):
+			pixmap_dir = datadir + '/pixmaps/'
+		else:
+			pixmap_dir = datadir + '/../pixmaps/'
+			
 		self.dirname = dirname
 		
 		# Exclude caching contents of MP3 by default
 		self.cache_exclusions = [ '\\MP3' ]
 		
 		# Find out proper way to find glade files
-		self.glade_file = self.datadir + '/' + 'guppy.glade'
+		self.glade_file = datadir + '/' + 'guppy.glade'
 
 		self.pvr_error_window = PVRErrorWindow(self.glade_file, self.dirname)
 
 		# Initialise Gtk thread support
 		gtk.gdk.threads_init()
 
-		actions = self.initUIManager()
+		actions = self.initUIManager(datadir)
 
 		# This must be done before loading the glade file.
 		gtk.glade.set_custom_handler(self.customWidgetHandler)
@@ -104,10 +108,10 @@ class GuppyWindow:
 		else:
 			show_parent_dir = False
 
-		self.pc_model = PCFileSystemModel(self.datadir,
+		self.pc_model = PCFileSystemModel(pixmap_dir,
 		                                  cwd=getConfValue('PC_CWD'),
 		                                  show_parent_dir=show_parent_dir)
-		self.pvr_model = PVRFileSystemModel(self.datadir,
+		self.pvr_model = PVRFileSystemModel(pixmap_dir,
 		                                    cwd=getConfValue('PVR_CWD'),
 		                                    show_parent_dir=show_parent_dir)
 		
@@ -165,7 +169,7 @@ class GuppyWindow:
 		self.last_file_transfer = None
 		self.quit_after_transfer = False
 
-	def initUIManager(self):
+	def initUIManager(self, datadir):
 		"""Initialise the UIManager.
 		
 		Return: Dictionary with all actions for the toolbar.
@@ -241,7 +245,7 @@ class GuppyWindow:
 										 ])
 		self.uimanager.insert_action_group(self.file_actiongrp, 3)
 		
-		self.uimanager.add_ui_from_file(self.datadir + 'guppy-gtk.xml')
+		self.uimanager.add_ui_from_file(datadir + 'guppy-gtk.xml')
 
 		self.file_popup = self.uimanager.get_widget('/FileTreePopup')
 		self.file_popup_delete_btn = self.uimanager.get_widget('/FileTreePopup/Delete')

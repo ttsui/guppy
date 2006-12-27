@@ -68,11 +68,11 @@ data_files = [
 	('share/doc/guppy', ['AUTHORS', 'COPYING', 'README', 'NEWS', 'CONTRIBUTORS']),
 	('share/guppy', listfiles('guppy', '*.glade')),
 	('share/guppy', listfiles('guppy', '*.xml')),
-	('share/guppy', listfiles('guppy', '*.png')),
+	('share/guppy/pixmaps', listfiles('pixmaps', '*.png')),
 	('share/hal/fdi/policy/20thirdparty', ['hal/toppy.fdi']),
 	('libexec', ['hal/hal-toppy-set-procperm']),
 	('share/applications', ['guppy.desktop']),
-	('share/pixmaps', ['guppy/guppy.png']),
+	('share/pixmaps', ['pixmaps/guppy.png']),
 	]
 
 scripts = ['guppy/guppy']
