@@ -34,7 +34,6 @@ from puppy import *
 from FileSystemModel import *
 from util import *
 from about import *
-import time
 
 class GuppyWindow:
 	SCREEN_INFO_UPDATE_INTERVAL = 10 * 60 * 1000 # 10 mins (unit in milliseconds)
@@ -514,7 +513,8 @@ class GuppyWindow:
 		dialog.set_version(VERSION)
 		dialog.set_license(LICENSE)
 		dialog.set_website(WEBSITE)
-		dialog.show()
+		dialog.run()
+		dialog.destroy()
 	
 	def on_column_clicked(self, col, data):
 		order = col.get_sort_order()
