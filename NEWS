@@ -4,6 +4,7 @@ guppy-1.0.1: 26 May 2006
 	- Handle Python version number with non-numeric characters, like in
 	  Ubuntu Edgy.
 	- Handle when Puppy fails to read a directory.
+	- Speed up start up by not caching contents of the MP3 directory.
 
 guppy-1.0.0: 26 May 2006
 	- Add HAL fdi and script to change permission of /proc/bus/usb/...
