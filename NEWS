@@ -5,6 +5,7 @@ guppy-1.0.1: 15 Jan 2007
 	  Ubuntu Edgy.
 	- Handle when Puppy fails to read a directory.
 	- Speed up start up by not caching contents of the MP3 directory.
+	- Catch exception when locale is not supported.
 
 guppy-1.0.0: 26 May 2006
 	- Add HAL fdi and script to change permission of /proc/bus/usb/...
