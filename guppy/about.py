@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 ## about.py - Information about Guppy
 ## Copyright (C) 2005-2006 Tony Tsui <tsui.tony@gmail.com>
 ##
