@@ -1,5 +1,5 @@
 %define name puppy
-%define version 1.11
+%define version 1.14
 %define release 1
 
 Summary: Command line Topfield PVR File Downloader
@@ -21,7 +21,7 @@ Puppy is a command line tool for downloading and uploading of files to a
 Topfield PVR.
 
 %prep
-%setup -n puppy_1.11
+%setup -n puppy_%{version}
 
 %patch1 -p1
 %patch2 -p1
