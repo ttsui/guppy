@@ -21,6 +21,8 @@ import time
 import string
 import copy
 import threading
+import sys
+import inspect
 
 import gtk
 import gobject
