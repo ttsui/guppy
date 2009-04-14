@@ -21,6 +21,8 @@ import gtk
 
 import GuppyWindow
 
+from puppy import *;
+
 class TransferThread(threading.Thread):
 	NUM_OF_RESET_ATTEMPTS = 6
 	NUM_OF_TRANSFER_ATTEMPTS = 2
