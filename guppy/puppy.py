@@ -109,7 +109,7 @@ class Puppy:
 
 	# FIXME: Can getFile() be merged with putFile()
 	def getFile(self, src_file, dest_file=None):
-		args = ['-c', 'get', src_file]
+		args = ['-i', '-c', 'get', src_file]
 		if dest_file != None:
 			args.append(dest_file)
 		else:
@@ -286,7 +286,7 @@ class Puppy:
 		except PuppyBusyError:
 			return False
 
-		output = output_file.readlines()
+		output_file.readlines()
 		output_file.close()
 		
 		if self.getStatus() != 0:
