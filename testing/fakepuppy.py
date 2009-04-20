@@ -32,7 +32,7 @@ FAIL_LIST_MIDWAY = True
 FAIL_SIZE     = False
 FAIL_NO_PVR   = False
 
-DOWNLOAD_RATE = 50
+DOWNLOAD_RATE = 5
 
 SLOW_LISTDIR = False
 
@@ -56,7 +56,7 @@ except:
 	print 'ERROR: Can not obtain exclusive lock on ' + lock_filename
 	sys.exit(8)
 
-opts, args = getopt.getopt(sys.argv[1:], 'c:t')
+opts, args = getopt.getopt(sys.argv[1:], 'c:ti')
 
 transfer = False
 listdir = False
