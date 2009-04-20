@@ -63,9 +63,7 @@ class TransferThread(threading.Thread):
 			cancel_btn = xml.get_widget('transfer_cancel_button')	
 
 			gtk.gdk.threads_enter()
-			allocation = cancel_btn.get_allocation()
 			cancel_btn.set_label(gtk.STOCK_STOP)
-			cancel_btn.set_size_request(allocation.width, allocation.height)
 			cancel_btn.set_data('state', 'stop')
 			gtk.gdk.threads_leave()
 
