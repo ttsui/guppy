@@ -1,20 +1,25 @@
 import mox
 
+import popen2
+
 from puppy import Puppy
 	
 def ignoresPacketCRCErrors_test():
 	mocker = mox.Mox()
+
+	mocker.StubOutWithMock(popen2, 'Popen4', True)
 	
-	puppy = Puppy()
+	popen = mocker.CreateMockAnything()
+	popen.tochild = mocker.CreateMockAnything()
+	popen.tochild.close()
+	popen.poll().AndReturn(-1)
+	popen.poll().AndReturn(-1)
 	
-	mocker.StubOutWithMock(puppy, 'getStatus')
-	puppy.getStatus(wait=False).AndReturn(-1)
-	
-	mocker.StubOutWithMock(puppy, '_execute')
-	puppy._execute([ '-i', '-c', 'get', 'movie.rec', 'movie.rec' ])
+	popen2.Popen4([ 'puppy', '-i', '-c', 'get', 'movie.rec', 'movie.rec' ]).AndReturn(popen)
 	
 	mocker.ReplayAll()
 
+	puppy = Puppy()
 	puppy.getFile('movie.rec', 'movie.rec')
 	
 	mocker.VerifyAll()
