@@ -103,21 +103,8 @@ class PathBar(gtk.Container):
 			self.queue_resize()
 		
 	def do_size_request(self, requisition):
-		#print 'do_size_request()'
-		req_width = 0
-		req_height = 0
-		widgets = [ self.down_btn, self.up_btn ] + self.btn_list
-
-		for widget in widgets:
-			widget_req = gtk.gdk.Rectangle(0, 0, *widget.size_request())
-			req_width += widget_req.width
-			req_height = max(req_height, widget_req.height)
-
-		requisition.width = req_width + (self.border_width * 2)
-		requisition.height = req_height + (self.border_width * 2)
-		
-		self.requisition = requisition
-		
+		for widget in [ self.down_btn, self.up_btn ] + self.btn_list:
+			widget.size_request()
 		
 	def do_size_allocate(self, allocation):
 		#print '\n\n\ndo_size_allocate(): allocation.width = %d allocation.height = %d' % (allocation.width, allocation.height)
