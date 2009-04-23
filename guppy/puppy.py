@@ -209,22 +209,22 @@ class Puppy:
 		elif status != 0:
 			self._handleErrorOuput(output)
 		
+		regex = re.compile(r"([df])\s+(\d+)\s+(\w+\s+\w+\s+\d+\s+[\d:]+\s+\d+)\s+(.+)")
 		listing = []
-		# Parse output of output_file and return it as a list
-		space = ' '
+		
 		for line in output:
-			entry = line.split()
+			entry = regex.match(line)
 
 			# Convert from Toppy's code page of ISO-8859-1 to UTF-8
-			filename = unicode(space.join(entry[7:]), self.encoding, 'replace')
+			# FIXME: Toppy may not always be ISO-8859-1. How do we find out
+			#        what encoding to use?
+			filename = unicode(entry.group(4), self.encoding, 'replace')
 			filename = filename.encode('utf-8')
 
-			date = unicode("%s %s %s %s" % (entry[2], entry[3], entry[4],
-			                                entry[6]),
-			               'iso8859-1', 'replace')
+			date = unicode(entry.group(3), self.encoding, 'replace')
 			date = date.encode('utf-8')
 
-			item = [ entry[0], filename, date, entry[1] ]
+			item = [ entry.group(1), filename, date, entry.group(2) ]
 			listing.append(item)
 		
 		return listing
