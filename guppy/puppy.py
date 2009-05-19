@@ -62,8 +62,6 @@ class Puppy:
 		output = output_file.readlines()
 		output_file.close()
 		
-		print output
-		
 		if self.getStatus() != 0:
 			self._handleErrorOuput(output)
 		
@@ -237,9 +235,6 @@ class Puppy:
 		output = output_file.readlines()
 		output_file.close()
 		
-		# XXX: Remove debug output
-		print output
-		
 		if self.getStatus() != 0:
 			self._handleErrorOuput(output)
 		
@@ -264,15 +259,11 @@ class Puppy:
 	def rename(self, old_name, new_name):
 		args = ['-c', 'rename', old_name, new_name]
 
-		print 'args = ', args
 		output_file = self._execute(args)
 
 		output = output_file.readlines()
 		output_file.close()
 
-		# XXX: Remove debug output
-		print output
-		
 		if self.getStatus() != 0:
 			self._handleErrorOuput(output)
 		
