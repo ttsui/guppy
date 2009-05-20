@@ -9,19 +9,17 @@ install:
 clean:
 	python setup.py clean
 	rm -rf build $DIST_DIR MANIFEST
+	(cd puppy && $(MAKE) clean)
 
-dist:
+compile:
+	(cd puppy && $(MAKE))
+
+dist: compile
 	python setup.py sdist --formats=bztar
 
 rpm:
-	# Make Fedora RPM
 	ln -sf pkg/setup.cfg-fedora setup.cfg
 	python setup.py bdist_rpm --install-script pkg/fedora_bdist_rpm-install.spec
-	# Make SUSE RPM
-# Broken at the moment :(
-#	ln -sf setup.cfg-suse setup.cfg
-#	python setup.py bdist_rpm
-#	rm -f setup.cfg
 
 deb:
 	# Make build area

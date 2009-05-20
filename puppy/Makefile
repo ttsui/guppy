@@ -1,6 +1,8 @@
 # Copyright (C) 2004-2008 Peter Urbanec
 # $Id: Makefile,v 1.8 2008/04/10 05:44:21 purbanec Exp $
 
+EXEC=guppy-puppy
+
 ifdef CROSS
 ifeq ($(CROSS),gearbox)
 
@@ -38,18 +40,19 @@ endif
 
 CFLAGS+=-std=gnu99 -Wall -W -Wshadow -Wstrict-prototypes -pedantic -fexpensive-optimizations -fomit-frame-pointer -frename-registers -O2
 
-puppy: puppy.o crc16.o mjd.o tf_bytes.o usb_io.o
+main: puppy.o crc16.o mjd.o tf_bytes.o usb_io.o
+	$(CC) $(LDFLAGS) puppy.o crc16.o mjd.o tf_bytes.o usb_io.o -o $(EXEC)
 
-strip: puppy
-	${STRIP} puppy
+strip: main
+	${STRIP} $(EXEC)
 
 clean:
 	-rm -f *.o
 	-rm -f *~
 	-rm -f puppy
 
-install: puppy
-	@echo "\npuppy does not require installation.\nJust copy the file 'puppy' to wherever you like!"
+install: main
+	@echo "\npuppy does not require installation.\nJust copy the file '$(EXEC)' to wherever you like!"
 
 
 crc16.o: crc16.c crc16.h

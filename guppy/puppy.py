@@ -34,7 +34,7 @@ class Puppy:
 	E_HDD_NOT_READY = 185
 	
 	def __init__(self):
-		self.cmd = 'puppy'
+		self.cmd = 'guppy-puppy'
 		self.turbo = False
 		self.popen_obj = None
 
@@ -69,7 +69,7 @@ class Puppy:
 
 	def exists(self):
 		for path in os.environ['PATH'].split(':'):
-			if len(path) > 0 and os.access(path + '/puppy', os.F_OK):
+			if len(path) > 0 and os.access(path + self.cmd, os.F_OK):
 				return True
 			
 		return False
