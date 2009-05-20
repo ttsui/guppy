@@ -1,3 +1,10 @@
+guppy-1.0.3:
+       - Support transfer with USB accelerator TAP.
+       - Ship with forked version of Puppy which accesses the Toppy via sysfs
+         (Mark Colclough)
+       - Fix bug where files with multiple spaces fail to download.
+       - Fix bug where transfer Stop/Remove button becomes very thin.
+
 guppy-1.0.2: 15 June 2007
 	- Fix "no encoding declared" error (Alexander Keusch)
 

@@ -18,15 +18,18 @@
 ## Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 APP_NAME = 'Guppy'
-VERSION = '1.0.2'
+VERSION = '1.0.3'
 DESCRIPTION='Topfield PVR File Downloader'
 AUTHOR = 'Tony Tsui'
 AUTHOR_EMAIL = 'tsui.tony@gmail.com'
 # List of additional contributors. Format: 'Name Email'
-CONTRIBUTORS = [ 'Icons by:', 
+CONTRIBUTORS = [ 'Mark Colclough',
+                 '',
+                 'Icons by:', 
                  'Tango Desktop Project http://tango-project.org',
                  'Peter Appleyard peter@whodaman.com.au',
-					  'Translations by:',
+                 '',
+                 'Translations by:',
                  'Jürgen Bausa',
 ]
 WEBSITE = 'http://guppy.nongnu.org'
