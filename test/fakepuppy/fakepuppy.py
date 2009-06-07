@@ -36,7 +36,7 @@ DOWNLOAD_RATE = 5
 
 SLOW_LISTDIR = False
 
-DATA_DIR='/local/devel/guppy/testing/'
+DATA_DIR='/local/devel/guppy/test/fakepuppy/'
 
 def check_fail(fail, fail_msg):
 	if fail:
