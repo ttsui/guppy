@@ -18,7 +18,6 @@ dist: compile
 	python setup.py sdist --formats=bztar
 
 rpm:
-	ln -sf pkg/setup.cfg-fedora setup.cfg
 	python setup.py bdist_rpm --install-script pkg/fedora_bdist_rpm-install.spec
 
 deb:
