@@ -33,5 +33,5 @@ CONTRIBUTORS = [ 'Mark Colclough',
                  'Jürgen Bausa',
 ]
 WEBSITE = 'http://guppy.nongnu.org'
-COPYRIGHT = 'Copyright (C) 2005-2006 Tony Tsui'
+COPYRIGHT = 'Copyright (C) 2005-2009 Tony Tsui'
 LICENSE = 'GNU Public License & CC-by-SA 2.5 License'
