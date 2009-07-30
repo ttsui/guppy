@@ -8,7 +8,7 @@ install:
 
 clean:
 	python setup.py clean
-	rm -rf build
+	rm -rf build $DIST_DIR MANIFEST
 
 dist:
 	python setup.py sdist --formats=bztar
