@@ -22,6 +22,7 @@ import popen2
 import signal
 import time
 import fcntl
+import re
 
 # Set to True for debug output
 DEBUG = False
