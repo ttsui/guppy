@@ -49,7 +49,7 @@ strip: main
 clean:
 	-rm -f *.o
 	-rm -f *~
-	-rm -f puppy
+	-rm -f $(EXEC)
 
 install: main
 	@echo "\npuppy does not require installation.\nJust copy the file '$(EXEC)' to wherever you like!"

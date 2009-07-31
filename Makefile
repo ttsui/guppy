@@ -8,7 +8,8 @@ install:
 
 clean:
 	python setup.py clean
-	rm -rf build $DIST_DIR MANIFEST
+	rm -f guppy/*.pyc
+	rm -rf build $(DIST_DIR) MANIFEST
 	(cd puppy && $(MAKE) clean)
 
 compile:
