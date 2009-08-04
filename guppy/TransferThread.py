@@ -39,7 +39,7 @@ class TransferThread(threading.Thread):
 			file_transfer = self.file_queue.get(True, None)
 
 			# Check if guppy is quiting
-			if file_transfer == GuppyWindow.QUIT_CMD:
+			if file_transfer == GuppyWindow.GuppyWindow.QUIT_CMD:
 				gtk.gdk.threads_enter()
 				self.guppy.reallyQuit()
 				gtk.gdk.threads_leave()
