@@ -915,11 +915,8 @@ class GuppyWindow:
 	def on_upload_btn_clicked(self, widget, data=None):
 		self.transferFile('upload')
 
-	def on_window_delete_event(self, widget, event, data=None):
-		self.on_quit(widget, data)
-		# Return True to stop event from propagating to default handler
-		# which destroys the window.
-		return True
+	def on_window_destroy(self, widget, data=None):
+		self.reallyQuit()
 
 	def reallyQuit(self):
 		# Save current working directory path
