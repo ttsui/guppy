@@ -68,13 +68,6 @@ class Puppy:
 		
 		return
 
-	def exists(self):
-		for path in os.environ['PATH'].split(':'):
-			if len(path) > 0 and os.access(path + self.cmd, os.F_OK):
-				return True
-			
-		return False
-		
 	def getDiskSpace(self):
 		args = ['-c', 'size']
 

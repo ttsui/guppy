@@ -496,16 +496,6 @@ class GuppyWindow:
 	def run(self):
 		self.createFileTrees()
 		
-		if not self.puppy.exists():
-			dialog = gtk.MessageDialog(type=gtk.MESSAGE_ERROR,
-			                           buttons=gtk.BUTTONS_OK)
-			msg = _('Guppy cannot run because the program Puppy is not available. Please install Puppy.')
-			msg += '\n\n' + _('You can download Puppy from') + ' <i>http://sourceforge.net/projects/puppy</i>'
-			dialog.set_markup(msg)
-			response = dialog.run()
-			dialog.destroy()
-			return
-
 		self.updateScreenInfo()
 		
 		gtk.gdk.threads_enter()
