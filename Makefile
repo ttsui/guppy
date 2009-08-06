@@ -1,7 +1,11 @@
 DESTDIR=/usr/local
+DESTDIR=/local/will_be_removed/guppy-install
 DEB_BUILD_DIR=build/deb
 VERSION=$(shell python -c 'import guppy.about; print guppy.about.VERSION')
 DIST_DIR=dist
+
+puppy:
+	(cd puppy && $(MAKE))
 
 install:
 	python setup.py install --prefix=$(DESTDIR)
@@ -12,14 +16,11 @@ clean:
 	rm -rf build $(DIST_DIR) MANIFEST
 	(cd puppy && $(MAKE) clean)
 
-compile:
-	(cd puppy && $(MAKE))
-
-dist: compile
+dist:
 	python setup.py sdist --formats=bztar
 
 rpm:
-	python setup.py bdist_rpm --install-script pkg/fedora_bdist_rpm-install.spec
+	python setup.py bdist_rpm --install-script pkg/fedora_bdist_rpm-install.spec --force-arch=$(shell uname -m)
 
 deb:
 	# Make build area
@@ -39,4 +40,4 @@ deb:
 	# Build the deb
 	dpkg --build $(DEB_BUILD_DIR) $(DIST_DIR)/guppy_$(VERSION)_all.deb
 
-.PHONY: install clean dist rpm deb
+.PHONY: install clean dist rpm deb puppy

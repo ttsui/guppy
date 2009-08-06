@@ -2,6 +2,7 @@
 from distutils.core import setup
 from distutils.command.install_data import install_data
 from distutils.command.install_lib import install_lib
+from distutils.command.build import build
 from distutils.dep_util import newer
 from distutils.log import info
 from fnmatch import fnmatch
@@ -73,9 +74,17 @@ data_files = [
 	('libexec', ['hal/hal-toppy-set-procperm']),
 	('share/applications', ['guppy.desktop']),
 	('share/pixmaps', ['pixmaps/guppy.png']),
+	('bin', ['puppy/guppy-puppy']),
 	]
 
 scripts = ['guppy/guppy']
+
+class Build(build):
+	def run(self):
+		if	os.system("make puppy") != 0:
+			raise SystemExit("Error while compiling puppy")
+		
+		build.run(self)
 
 setup(name='guppy',
 	version=about.VERSION,
@@ -87,5 +96,5 @@ setup(name='guppy',
 	packages=['guppy'],
 	scripts=scripts,
 	data_files=data_files,
-	cmdclass={'install_data': InstallData})
+	cmdclass={'install_data': InstallData, 'build' : Build})
 
