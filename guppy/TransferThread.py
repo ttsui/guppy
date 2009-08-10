@@ -138,17 +138,14 @@ class TransferThread(threading.Thread):
 			# Set modification time of downloaded file to the same time
 			# as on the PVR.
 			if transfer_successful and direction == 'download':
-				try:
-					# Parse date string
-					time_struct = time.strptime(file_transfer.file_date, '%a %b %d %Y')
-					
-					# Convert to seconds since the epoch
-					time_secs = time.mktime(time_struct)
-					
-					# Set modification time
-					os.utime(dst_file, (int(time.time()), time_secs))
-				except:
-					pass
+				# Parse date string
+				time_struct = time.strptime(file_transfer.file_date, '%a %b %d %H:%M:%S %Y')
+				
+				# Convert to seconds since the epoch
+				time_secs = time.mktime(time_struct)
+				
+				# Set modification time
+				os.utime(dst_file, (int(time.time()), time_secs))
 			
 			gtk.gdk.threads_enter()
 			if transfer_successful:
