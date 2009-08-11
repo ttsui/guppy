@@ -1,8 +1,0 @@
-# Copy the line beginning with toppypvr into /etc/hotplug/usb.usermap
-# Make sure it is all on one line. You can check this by disabling word wrap
-# in your editor.
-#
-# Based on script from Jürgen Bausa
-
-# usb module	match_flags	idVendor idProduct bcdDevice_lo bcdDevice_hi bDeviceClass bDeviceSubClass bDeviceProtocol bInterfaceClass bInterfaceSubClass bInterfaceProtocol driver_info
-toppypvr	0x0003 		0x11db   0x1000    0x0000       0x0000       0x00         0x00            0x00            0x00            0x00               0x00               0x00000000

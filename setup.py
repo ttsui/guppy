@@ -70,8 +70,6 @@ data_files = [
 	('share/guppy', listfiles('guppy', '*.glade')),
 	('share/guppy', listfiles('guppy', '*.xml')),
 	('share/guppy/pixmaps', listfiles('pixmaps', '*.png')),
-	('share/hal/fdi/policy/20thirdparty', ['hal/toppy.fdi']),
-	('libexec', ['hal/hal-toppy-set-procperm']),
 	('share/applications', ['guppy.desktop']),
 	('share/pixmaps', ['pixmaps/guppy.png']),
 	('bin', ['puppy/guppy-puppy']),

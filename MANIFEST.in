@@ -6,8 +6,6 @@ recursive-include test *
 recursive-include pixmaps *.png *.svg
 recursive-include po *.po
 recursive-include testing *.py *.txt puppy
-recursive-include hal *.fdi hal-toppy-set-procperm debian*
 recursive-include puppy *.c *.h Makefile LICENCE *.spec
-prune hal/.arch-ids
 recursive-include pkg *
 prune pkg/.arch-ids
