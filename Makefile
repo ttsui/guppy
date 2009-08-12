@@ -1,5 +1,4 @@
 DESTDIR=/usr/local
-DESTDIR=/local/will_be_removed/guppy-install
 DEB_BUILD_DIR=build/deb
 VERSION=$(shell python -c 'import guppy.about; print guppy.about.VERSION')
 DIST_DIR=dist
