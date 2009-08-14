@@ -1,4 +1,4 @@
-guppy-1.0.3:
+guppy-1.0.3: 14 Aug 2009
        - Support transfer with USB accelerator TAP.
        - Ship with forked version of Puppy which accesses the Toppy via sysfs
          (Mark Colclough)
