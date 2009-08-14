@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 ## fakepuppy.py - Puppy simulator program
-## Copyright (C) 2005 Tony Tsui <tsui.tony@gmail.com>
+## Copyright (C) 2005-2009 Tony Tsui <tsui.tony@gmail.com>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ FAIL_LIST_MIDWAY = True
 FAIL_SIZE     = False
 FAIL_NO_PVR   = False
 
-DOWNLOAD_RATE = 5
+DOWNLOAD_RATE = 50
 
 SLOW_LISTDIR = False
 
