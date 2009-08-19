@@ -1,0 +1,5 @@
+guppy (1.0.3-0ubuntu1) jaunty; urgency=low
+
+  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+
+ -- Tony Tsui <tsui.tony@gmail.com>  Tue, 18 Aug 2009 21:21:22 +0100

@@ -1,0 +1,13 @@
+Source: guppy
+Section: gnome 
+Priority: optional
+Maintainer: Tony Tsui <tsui.tony@gmail.com>
+XSBC-Original-Maintainer: Tony Tsui <tsui.tony@gmail.com>
+Build-Depends: debhelper (>= 7)
+Standards-Version: 3.8.0
+Homepage: http://guppy.ttsui.net
+
+Package: guppy
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Guppy is an application to download files from Topfield PVRs.
