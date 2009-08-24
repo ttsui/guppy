@@ -28,7 +28,6 @@ deb:
 	$(GIT_EXPORT) | gzip > $(DEB_BUILD_DIR)/guppy_$(VERSION).orig.tar.gz
 	tar zxf $(DEB_BUILD_DIR)/guppy_$(VERSION).orig.tar.gz -C $(DEB_BUILD_DIR)
 	cp -ra pkg/debian $(DEB_BUILD_DIR)/guppy-$(VERSION)/
-	cd $(DEB_BUILD_DIR)/guppy-$(VERSION)/
-	debuild -S -sa
+	cd $(DEB_BUILD_DIR)/guppy-$(VERSION)/ && debuild -S -sa
 
 .PHONY: install clean dist rpm deb puppy
