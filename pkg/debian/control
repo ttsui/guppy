@@ -1,13 +1,19 @@
 Source: guppy
-Section: gnome 
+Section: gnome
 Priority: optional
 Maintainer: Tony Tsui <tsui.tony@gmail.com>
 XSBC-Original-Maintainer: Tony Tsui <tsui.tony@gmail.com>
-Build-Depends: debhelper (>= 7)
+Build-Depends: cdbs,
+               debhelper (>= 7),
+               python-support (>=0.5.6)
 Standards-Version: 3.8.0
 Homepage: http://guppy.ttsui.net
 
 Package: guppy
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${python:Depends},
+         ${misc:Depends},
+         ${shlibs:Depends}
+         python-gobject,
+         python-gtk2
 Description: Guppy is an application to download files from Topfield PVRs.
